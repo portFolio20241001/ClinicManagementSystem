@@ -1,7 +1,8 @@
-package com.project.back_end.services;
+package com.project.back_end.Service;
 
 import com.project.back_end.Entity.PrescriptionForMongo;
-import com.project.back_end.repo.PrescriptionRepository;
+import com.project.back_end.Repository.PrescriptionRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.project.back_end.controllers;
+package com.project.back_end.Controller;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.back_end.DTO.AppointmentDTO;
 import com.project.back_end.DTO.Login;
 import com.project.back_end.Entity.Patient;
-import com.project.back_end.services.CommonService;
-import com.project.back_end.services.PatientService;
+import com.project.back_end.Service.CommonService;
+import com.project.back_end.Service.PatientService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -1,4 +1,4 @@
-package com.project.back_end.controllers;
+package com.project.back_end.Controller;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.DTO.Login;
 import com.project.back_end.Entity.Doctor;
-import com.project.back_end.services.CommonService;
-import com.project.back_end.services.DoctorService;
+import com.project.back_end.Service.CommonService;
+import com.project.back_end.Service.DoctorService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

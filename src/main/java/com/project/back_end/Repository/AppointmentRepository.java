@@ -1,4 +1,4 @@
-package com.project.back_end.repo;
+package com.project.back_end.Repository;
 
 import com.project.back_end.Entity.Appointment;
 import org.springframework.data.jpa.repository.*;

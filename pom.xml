@@ -86,13 +86,13 @@
 		    <scope>runtime</scope>
 		</dependency>
 		
-		<!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson -->
+		<!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson 　　　SpringSecurity導入に伴い削除
 		<dependency>
 		    <groupId>io.jsonwebtoken</groupId>
 		    <artifactId>jjwt-jackson</artifactId>
 		    <version>0.12.6</version>
 		    <scope>runtime</scope>
-		</dependency>
+		</dependency>-->
 		
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -100,11 +100,35 @@
 			<optional>true</optional>
 		</dependency>
 		
-		<!-- spring-security-crypto だけ残し、starter-security を削除 -->
+		<!-- spring-security-crypto 　
+		　　　　⇒　BCryptPasswordEncoderで利用する-->
 		<dependency>
 		    <groupId>org.springframework.security</groupId>
 		    <artifactId>spring-security-crypto</artifactId>
 		</dependency>
+		
+		<!-- Spring Security -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+		  <groupId>io.jsonwebtoken</groupId>
+		  <artifactId>jjwt-api</artifactId>
+		  <version>0.12.6</version>
+		</dependency>
+		<dependency>
+		  <groupId>io.jsonwebtoken</groupId>
+		  <artifactId>jjwt-impl</artifactId>
+		  <version>0.12.6</version>
+		  <scope>runtime</scope>
+		</dependency>
+		<dependency>
+		  <groupId>io.jsonwebtoken</groupId>
+		  <artifactId>jjwt-jackson</artifactId>
+		  <version>0.12.6</version>
+		  <scope>runtime</scope>
+</dependency>
 		
 		<!-- springdoc-openapi-ui: Swagger UI を表示するための依存関係 -->
 		<dependency>
@@ -112,7 +136,17 @@
 	      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 	      <version>2.5.0</version>
 	   </dependency>
-	   
+
+		<dependency>
+			<groupId>com.example</groupId>
+			<artifactId>CourseraSpringBookAppCrudSample</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.project</groupId>
+			<artifactId>code</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<build>

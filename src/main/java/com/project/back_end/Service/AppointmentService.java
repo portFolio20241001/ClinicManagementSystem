@@ -1,4 +1,4 @@
-package com.project.back_end.services;
+package com.project.back_end.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.back_end.DTO.AppointmentDTO;
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Payment;
-import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.Repository.AppointmentRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.project.back_end.services;
+package com.project.back_end.Service;
 
 import java.util.Date;
 
@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.project.back_end.Entity.Patient;
-import com.project.back_end.repo.AdminRepository;
-import com.project.back_end.repo.DoctorRepository;
-import com.project.back_end.repo.PatientRepository;
+import com.project.back_end.Repository.AdminRepository;
+import com.project.back_end.Repository.DoctorRepository;
+import com.project.back_end.Repository.PatientRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

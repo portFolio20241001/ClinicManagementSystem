@@ -1,0 +1,132 @@
+package com.project.back_end.Controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.project.back_end.DTO.LoginRequest;
+import com.project.back_end.DTO.LoginResponse;
+import com.project.back_end.Security.JwtService;
+import com.project.back_end.Security.UserDetailsImpl;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * ログイン認証を担当する REST コントローラー。
+ * <p>
+ * ユーザー名・パスワードを受け取り、認証成功時に JWT を発行してクライアントへ返却します。
+ */
+@RestController // REST API を提供するコントローラーとして宣言
+@RequestMapping("/api/auth") // ベースとなるURLパスの指定（例: /api/auth/login）
+@RequiredArgsConstructor // コンストラクタインジェクションを自動生成
+public class LoginController {
+
+    // Spring Security の認証処理を担当する AuthenticationManager をDI
+    private final AuthenticationManager authenticationManager;
+
+    // JWTトークンの発行・検証などを担当するサービスをDI
+    private final JwtService jwtService;
+    
+    
+    
+    
+    @Operation(
+    	    summary = "ユーザーのログイン認証を行う　(SpringSecuriyのJWTFilter認証)",
+    	    description = "ユーザー名とパスワードを受け取り、認証に成功した場合はJWTトークンとユーザーロールを返却します。",
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description = "ログイン成功。JWTトークンとロールが返却されます。",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                schema = @Schema(implementation = LoginResponse.class),
+    	                examples = {
+    	                    @ExampleObject(name = "Admin Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_ADMIN\"\n}"),
+    	                    @ExampleObject(name = "Doctor Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_DOCTOR\"\n}"),
+    	                    @ExampleObject(name = "Patient Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_PATIENT\"\n}")
+    	                }
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description = "認証失敗。ユーザー名またはパスワードが正しくありません。",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = "{\n  \"message\": \"認証に失敗しました。ユーザー名またはパスワードが正しくありません。\",\n  \"error\": 401\n}")
+    	            )
+    	        )
+    	    }
+    	)
+
+    /**
+     * ログインリクエストを処理し、JWT トークンを返却します。
+     *
+     * @param request クライアントからのログインリクエスト（ユーザー名・パスワード）
+     * @return JWT トークンとユーザーのロール情報
+     */
+    @PostMapping("/login") // HTTP POST /api/auth/login にマッピング
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    	
+    	System.out.println("ログイン認証開始");
+    	
+        try {
+	        // === 認証処理 ===
+        	System.out.println("ユーザー認証開始");
+	        // ユーザー名とパスワードを使って、Spring Security の認証処理を行う
+	        Authentication authentication = authenticationManager.authenticate(
+	                new UsernamePasswordAuthenticationToken(
+	                        request.getUsername(), // 入力されたユーザー名
+	                        request.getPassword()  // 入力されたパスワード
+	                )
+	        );
+	        
+	        System.out.println("ユーザー認証OK");
+	        System.out.println("userDetails取得開始");
+	
+	        // === 認証成功時のユーザー情報取得 ===
+	        // 認証済みユーザーの情報を UserDetailsImpl 型にキャストして取得
+	        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+	        
+	        System.out.println("userDetails.getUser()：" + userDetails.getUser());
+	        
+	        // === JWT トークンの発行 ===
+	        // 認証済みユーザーに対してトークンを発行
+	        System.out.println("token発行開始");
+	        
+	        String token = jwtService.generateToken(userDetails);
+	        
+	        System.out.println("token発行完了。token：" + token);
+	
+	        // === トークンとロール情報をレスポンスとして返却 ===
+	        // クライアントはこれを保持し、次回以降 Authorization ヘッダーにセットして使用する
+	        return ResponseEntity.ok(
+	                new LoginResponse(
+	                        token,                          // 発行したJWTトークン
+	                        userDetails.getUser().getRole().name() // ユーザーのロール（例：ROLE_DOCTOR）
+	                )
+	        );
+        } catch (AuthenticationException ex) {
+        	
+            // Mapを使ってJSON形式のレスポンスを返す
+            Map<String, Object> errorBody = new HashMap<>();
+            errorBody.put("message", "認証に失敗しました。ユーザー名またはパスワードが正しくありません。");
+            errorBody.put("error", 401);
+
+            return ResponseEntity.status(401).body(errorBody);
+        }
+    }
+}

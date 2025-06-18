@@ -1,7 +1,7 @@
 // ================================================
 // PrescriptionController.java
 // ================================================
-package com.project.back_end.controllers;
+package com.project.back_end.Controller;
 
 import java.util.Map;
 import java.util.Optional;
@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.Entity.PrescriptionForMongo;
-import com.project.back_end.services.AppointmentService;
-import com.project.back_end.services.CommonService;
-import com.project.back_end.services.PrescriptionService;
+import com.project.back_end.Service.AppointmentService;
+import com.project.back_end.Service.CommonService;
+import com.project.back_end.Service.PrescriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

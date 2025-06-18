@@ -136,4 +136,15 @@ public class User {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+    
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", role=" + role +
+                ", fullName='" + fullName + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }

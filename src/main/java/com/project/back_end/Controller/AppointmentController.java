@@ -1,4 +1,4 @@
-package com.project.back_end.controllers;
+package com.project.back_end.Controller;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.Entity.Appointment;
-import com.project.back_end.services.AppointmentService;
-import com.project.back_end.services.CommonService;  // ★共通バリデーション用サービス
+import com.project.back_end.Service.AppointmentService;
+import com.project.back_end.Service.CommonService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -1,4 +1,4 @@
-package com.project.back_end.config;
+package com.project.back_end.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,15 +27,15 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*");
     }
 
-    /* =========================
-     * 2. PasswordEncoder Bean   
-     * ========================= */
-    /**
-     * アプリ全体で使用する {@link PasswordEncoder} を DI コンテナへ登録する。  
-     * デフォルト強度(10)の BCrypt を使用。
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+//    /* =========================
+//     * 2. PasswordEncoder Bean   
+//     * ========================= */
+//    /**
+//     * アプリ全体で使用する {@link PasswordEncoder} を DI コンテナへ登録する。  
+//     * デフォルト強度(10)の BCrypt を使用。
+//     */
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        return new BCryptPasswordEncoder();
+//    }
 }

@@ -1,11 +1,11 @@
-package com.project.back_end.mvc;
+package com.project.back_end.Mvc;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.project.back_end.services.CommonService;
+import com.project.back_end.Service.CommonService;
 
 @Controller
 public class DashboardController {

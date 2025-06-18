@@ -1,4 +1,4 @@
-package com.project.back_end.config;
+package com.project.back_end.Config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

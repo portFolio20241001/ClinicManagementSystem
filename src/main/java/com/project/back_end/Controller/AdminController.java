@@ -1,4 +1,4 @@
-package com.project.back_end.controllers;
+package com.project.back_end.Controller;
 
 import java.security.Provider.Service;
 import java.util.Map;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.back_end.DTO.Login;
 import com.project.back_end.Entity.Admin;
 import com.project.back_end.Entity.User;
-import com.project.back_end.services.CommonService;        // 共通ロジックをまとめたサービス
+import com.project.back_end.Service.CommonService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

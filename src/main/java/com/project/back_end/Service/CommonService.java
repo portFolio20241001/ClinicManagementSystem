@@ -1,4 +1,4 @@
-package com.project.back_end.services;
+package com.project.back_end.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -19,10 +19,10 @@ import com.project.back_end.Entity.Admin;
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Doctor;
 import com.project.back_end.Entity.Patient;
-import com.project.back_end.repo.AdminRepository;
-import com.project.back_end.repo.AppointmentRepository;
-import com.project.back_end.repo.DoctorRepository;
-import com.project.back_end.repo.PatientRepository;
+import com.project.back_end.Repository.AdminRepository;
+import com.project.back_end.Repository.AppointmentRepository;
+import com.project.back_end.Repository.DoctorRepository;
+import com.project.back_end.Repository.PatientRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
