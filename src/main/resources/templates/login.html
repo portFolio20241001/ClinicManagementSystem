@@ -1,0 +1,150 @@
+	<!DOCTYPE html>
+	<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+	<head>
+	    <meta charset="UTF-8">
+	    <title>Smart Clinic Login</title>
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	    <style>
+	        body {
+	            margin: 0;
+	            font-family: 'Segoe UI', sans-serif;
+	            background: linear-gradient(120deg, #1f2937, #4b5563);
+	            display: flex;
+	            justify-content: center;
+	            align-items: center;
+	            height: 100vh;
+	        }
+	
+	        .login-container {
+	            background-color: #ffffff;
+	            border-radius: 12px;
+	            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+	            padding: 40px;
+	            width: 100%;
+	            max-width: 380px;
+	        }
+	
+	        h2 {
+	            text-align: center;
+	            margin-bottom: 30px;
+	            color: #1f2937;
+	        }
+	
+	        .input-group {
+	            margin-bottom: 20px;
+	        }
+	
+	        .input-group label {
+	            display: block;
+	            margin-bottom: 5px;
+	            color: #374151;
+	        }
+	
+	        .input-group input {
+	            width: 100%;
+	            padding: 10px;
+	            border: 1px solid #cbd5e0;
+	            border-radius: 6px;
+	            font-size: 16px;
+	            transition: 0.3s;
+	        }
+	
+	        .input-group input:focus {
+	            outline: none;
+	            border-color: #3b82f6;
+	            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+	        }
+	
+	        .login-btn {
+	            width: 100%;
+	            padding: 12px;
+	            background-color: #3b82f6;
+	            border: none;
+	            color: #fff;
+	            font-size: 16px;
+	            border-radius: 6px;
+	            cursor: pointer;
+	            transition: background-color 0.3s ease, transform 0.2s ease;
+	        }
+	
+	        .login-btn:hover {
+	            background-color: #2563eb;
+	            transform: translateY(-1px);
+	        }
+	
+	        .footer {
+	            margin-top: 20px;
+	            text-align: center;
+	            font-size: 14px;
+	            color: #6b7280;
+	        }
+	    </style>
+	</head>
+	<body>
+	
+	<div class="login-container">
+	    <h2>Smart Clinic ログイン</h2>
+	    <form>
+	        <div class="input-group">
+	            <label for="username">ユーザー名</label>
+	            <input type="text" id="username" name="username" placeholder="例：doctorUser1" required>
+	        </div>
+	        <div class="input-group">
+	            <label for="password">パスワード</label>
+	            <input type="password" id="password" name="password" placeholder="例：docpass1" required>
+	        </div>
+	        <button type="submit" class="login-btn">ログイン</button>
+	    </form>
+	    <div class="footer">
+	        &copy; 2025 Smart Clinic
+	    </div>
+	</div>
+	
+	<script>
+document.querySelector("form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    try {
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("role", data.role);
+
+            // ロールに応じてHTMLページに遷移（SPA構成）
+            switch (data.role) {
+                case "ROLE_ADMIN":
+                    location.href = "/html/adminDashboard.html";
+                    break;
+                case "ROLE_DOCTOR":
+                    location.href = "/html/doctorDashboard.html";
+                    break;
+                case "ROLE_PATIENT":
+                    location.href = "/html/patientDashboard.html";
+                    break;
+                default:
+                    alert("不明なロールです");
+            }
+        } else {
+            const error = await res.json();
+            alert(error.message || "ログインに失敗しました。");
+        }
+    } catch (err) {
+        alert("サーバーに接続できませんでした。");
+    }
+});
+</script>
+	
+	
+	</body>
+	</html>

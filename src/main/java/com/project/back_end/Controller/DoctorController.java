@@ -4,14 +4,15 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+//import java.util.Optional;	//　SpringSecurity対応により廃止
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+//import org.springframework.transaction.annotation.Transactional;		//　SpringSecurity対応により廃止
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,9 +22,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.back_end.DTO.Login;
+//import com.project.back_end.DTO.Login;			//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Doctor;
-import com.project.back_end.Service.CommonService;
+//import com.project.back_end.Service.CommonService;	//　SpringSecurity対応により廃止
 import com.project.back_end.Service.DoctorService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,7 +58,7 @@ public class DoctorController {
     private final DoctorService doctorService;
 
     /** トークン検証や汎用フィルタを行う共通サービス */
-    private final CommonService commonService;
+//    private final CommonService commonService;		//　SpringSecurity対応により廃止
 
     /** API パスの前置き文字列（ログ用） */
     @Value("${api.path}")
@@ -126,37 +127,39 @@ public class DoctorController {
      * @param token    認証トークン（patient ロール想定）
      * @return 空き時間リスト or エラー
      */
-    @GetMapping("/availability/{doctorId}/{date}/{token}")
+    
+//    @GetMapping("/availability/{doctorId}/{date}/{token}")　//　SpringSecurity対応により廃止
+    @GetMapping("/availability/{doctorId}/{date}")					//　SpringSecurity対応により追加
+    @PreAuthorize("hasAnyRole('PATIENT', 'DOCTOR')")									//　SpringSecurity対応により追加
     public ResponseEntity<Map<String, Object>> getDoctorAvailability(
             @PathVariable Long doctorId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @PathVariable String token) {
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+//            @PathVariable String token) {	//　SpringSecurity対応により廃止
     	
     	
-    	System.out.println("@GetMapping(\"/availability/{doctorId}/{date}/{token}\")開始");
+    	System.out.println("@GetMapping(\"/availability/{doctorId}/{date}/\")開始");
     	
-        /* ---- ① トークン検証（patient）---- */
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
-        
-        System.out.println("① トークン検証（patient）通過");
+    	//　SpringSecurity対応により廃止
+//        /* ---- ① トークン検証（patient）---- */
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
+//        
+//        System.out.println("① トークン検証（patient）通過");
 
         /* ---- ② 空き時間取得 ---- */
         Map<String, Object> body = new HashMap<>();
         
         
-        body.put("message", "トークンは有効です。");
-        body.put("availableTimes",
-                 doctorService.getDoctorAvailability(doctorId, date));
+//        body.put("message", "トークンは有効です。");	//　SpringSecurity対応により廃止
         
-        System.out.println("② トークン検証（patient）通過");
+        body.put("availableTimes", doctorService.getDoctorAvailability(doctorId, date));
         
         return ResponseEntity.ok(body);
     }
@@ -199,7 +202,6 @@ public class DoctorController {
     )
 
     @GetMapping
-    @Transactional
     public ResponseEntity<Map<String, Object>> getDoctors() {
     	
     	log.info("★ GET /doctor  全医師取得リクエスト受信");
@@ -288,28 +290,31 @@ public class DoctorController {
     	    }
     	)
 
-    @PostMapping("/{token}")
+//    @PostMapping("/{token}")　// SpringSecurity対応により廃止
+    @PostMapping	  									// SpringSecurity対応により追加
+    @PreAuthorize("hasRole('ADMIN')")		// SpringSecurity対応により追加
     public ResponseEntity<Map<String, String>> saveDoctor(
-            @RequestBody @Valid Doctor doctor,
-            @PathVariable String token) {
+            @RequestBody @Valid Doctor doctor) {
+//            @PathVariable String token) {	// SpringSecurity対応により廃止
 
-        /* ---- トークン検証（admin）---- 
-         * 
-         * commonService.validateToken(token, "admin") で JWT を解析し、「有効な admin トークンか」をチェック。
-		 * 戻り値は ResponseEntity<Map<String,String>> で、
-		 * 成功時 ── body: 空 or null  •  status: 200 OK
-		 * 失敗時 ── body: {"error": "...メッセージ"} • status: 401 など
-         * 
-         * */
-    	Optional<String> hasError = commonService.validateToken(token, "admin");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+    	// SpringSecurity対応により廃止
+//        /* ---- トークン検証（admin）---- 
+//         * 
+//         * commonService.validateToken(token, "admin") で JWT を解析し、「有効な admin トークンか」をチェック。
+//		 * 戻り値は ResponseEntity<Map<String,String>> で、
+//		 * 成功時 ── body: 空 or null  •  status: 200 OK
+//		 * 失敗時 ── body: {"error": "...メッセージ"} • status: 401 など
+//         * 
+//         * */
+//    	Optional<String> hasError = commonService.validateToken(token, "admin");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
 
         /* ---- 登録処理 ---- */
         Map<String, String> body = new HashMap<>();
@@ -330,75 +335,76 @@ public class DoctorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
-    /* =====================================================================
-     * 4) 医師ログイン
-     * ===================================================================*/
-    @Operation(
-    	    summary = "医師ログイン",
-    	    description = "ユーザー名とパスワードでログインし、JWT トークンを取得します。",
-    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-    	        required = true,
-    	        content = @Content(
-    	            schema = @Schema(implementation = Login.class),
-    	            examples = @ExampleObject(
-    	                name = "ログイン例",
-    	                value = """
-    	                    {
-    	                      "username": "doctorUser1",
-    	                      "password": "password123"
-    	                    }"""
-    	            )
-    	        )
-    	    ),
-    	    responses = {
-    	        @ApiResponse(
-    	            responseCode = "200",
-    	            description = "ログイン成功",
-    	            content = @Content(
-    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
-    	                examples = @ExampleObject(
-    	                    name = "成功例",
-    	                    value = """
-    	                        {
-    	                          "token": "eyJhbGciOiJIUzI1NiJ9.generatedToken",
-    	                          "message": "ログインに成功しました。"
-    	                        }"""
-    	                )
-    	            )
-    	        ),
-    	        @ApiResponse(
-    	        	    responseCode = "401",
-    	        	    description = "認証失敗（ユーザー名不一致 または パスワード不一致）",
-    	        	    content = @Content(
-    	        	        mediaType = MediaType.APPLICATION_JSON_VALUE,
-    	        	        examples = {
-    	        	            @ExampleObject(
-    	        	                name = "ユーザー名不一致",
-    	        	                value = """
-    	        	                    {
-    	        	                      "error": "ユーザー名が存在しません。"
-    	        	                    }"""
-    	        	            ),
-    	        	            @ExampleObject(
-    	        	                name = "パスワード不一致",
-    	        	                value = """
-    	        	                    {
-    	        	                      "error": "パスワードが一致しません。"
-    	        	                    }"""
-    	        	            )
-    	        	        }
-    	        	    )
-    	        	)
-    	        }
-    	)
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> doctorLogin(
-            @RequestBody @Valid Login login) {
-
-        log.info("★ 医師ログイン要求: username={}", login.getUsername());
-        
-        return doctorService.doctorLogin(login);
-    }
+ // SpringSecurity対応により廃止
+//    /* =====================================================================
+//     * 4) 医師ログイン
+//     * ===================================================================*/
+//    @Operation(
+//    	    summary = "医師ログイン",
+//    	    description = "ユーザー名とパスワードでログインし、JWT トークンを取得します。",
+//    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+//    	        required = true,
+//    	        content = @Content(
+//    	            schema = @Schema(implementation = Login.class),
+//    	            examples = @ExampleObject(
+//    	                name = "ログイン例",
+//    	                value = """
+//    	                    {
+//    	                      "username": "doctorUser1",
+//    	                      "password": "password123"
+//    	                    }"""
+//    	            )
+//    	        )
+//    	    ),
+//    	    responses = {
+//    	        @ApiResponse(
+//    	            responseCode = "200",
+//    	            description = "ログイン成功",
+//    	            content = @Content(
+//    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+//    	                examples = @ExampleObject(
+//    	                    name = "成功例",
+//    	                    value = """
+//    	                        {
+//    	                          "token": "eyJhbGciOiJIUzI1NiJ9.generatedToken",
+//    	                          "message": "ログインに成功しました。"
+//    	                        }"""
+//    	                )
+//    	            )
+//    	        ),
+//    	        @ApiResponse(
+//    	        	    responseCode = "401",
+//    	        	    description = "認証失敗（ユーザー名不一致 または パスワード不一致）",
+//    	        	    content = @Content(
+//    	        	        mediaType = MediaType.APPLICATION_JSON_VALUE,
+//    	        	        examples = {
+//    	        	            @ExampleObject(
+//    	        	                name = "ユーザー名不一致",
+//    	        	                value = """
+//    	        	                    {
+//    	        	                      "error": "ユーザー名が存在しません。"
+//    	        	                    }"""
+//    	        	            ),
+//    	        	            @ExampleObject(
+//    	        	                name = "パスワード不一致",
+//    	        	                value = """
+//    	        	                    {
+//    	        	                      "error": "パスワードが一致しません。"
+//    	        	                    }"""
+//    	        	            )
+//    	        	        }
+//    	        	    )
+//    	        	)
+//    	        }
+//    	)
+//    @PostMapping("/login")
+//    public ResponseEntity<Map<String, String>> doctorLogin(
+//            @RequestBody @Valid Login login) {
+//
+//        log.info("★ 医師ログイン要求: username={}", login.getUsername());
+//        
+//        return doctorService.doctorLogin(login);
+//    }
 
     /* =====================================================================
      * 5) 医師情報更新（Adminロールで更新）
@@ -480,23 +486,26 @@ public class DoctorController {
     	    }
     	)
 
-    @PutMapping("/{token}")
+//    @PutMapping("/{token}")	// SpringSecurity対応により廃止
+    @PutMapping											// SpringSecurity対応により追加
+    @PreAuthorize("hasRole('ADMIN')")			// SpringSecurity対応により追加
     public ResponseEntity<Map<String, String>> updateDoctor(
-            @RequestBody @Valid Doctor doctor,
-            @PathVariable String token) {
+            @RequestBody @Valid Doctor doctor) {
+//            @PathVariable String token) {				// SpringSecurity対応により廃止
 
-    	Optional<String> hasError = commonService.validateToken(token, "admin");  
+//    	Optional<String> hasError = commonService.validateToken(token, "admin");  	// SpringSecurity対応により廃止
 
     	System.out.println("username: " + doctor.getUser().getUsername());
     	System.out.println("password: " + doctor.getUser().getPasswordHash());
     	System.out.println("fullname: " + doctor.getUser().getFullName());
     	System.out.println("role: " + doctor.getUser().getRole());
         
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+    	// SpringSecurity対応により廃止
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
         
         return doctorService.updateDoctor(doctor);
     }
@@ -565,20 +574,22 @@ public class DoctorController {
     	    }
     	)
 
-    @DeleteMapping("/{doctorId}/{token}")
+//    @DeleteMapping("/{doctorId}/{token}")	// SpringSecurity対応により廃止
+    @DeleteMapping("/{doctorId}")				//	 SpringSecurity対応により追加
+    @PreAuthorize("hasRole('ADMIN')")			// 	SpringSecurity対応により追加
     public ResponseEntity<Map<String, String>> deleteDoctor(
-            @PathVariable Long doctorId,
-            @PathVariable String token) {
-
-    	Optional<String> hasError = commonService.validateToken(token, "admin");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+            @PathVariable Long doctorId) {
+//            @PathVariable String token) {	// SpringSecurity対応により廃止
+    	// SpringSecurity対応により廃止
+//    	Optional<String> hasError = commonService.validateToken(token, "admin");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
         
         return doctorService.deleteDoctor(doctorId);
     }

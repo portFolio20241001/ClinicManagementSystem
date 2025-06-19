@@ -10,7 +10,7 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+//import org.springframework.security.crypto.password.PasswordEncoder; //SecuritySecurity対応により廃止
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +19,14 @@ import com.project.back_end.Entity.Admin;
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Doctor;
 import com.project.back_end.Entity.Patient;
-import com.project.back_end.Repository.AdminRepository;
+//import com.project.back_end.Repository.AdminRepository; //SecuritySecurity対応により廃止
 import com.project.back_end.Repository.AppointmentRepository;
 import com.project.back_end.Repository.DoctorRepository;
 import com.project.back_end.Repository.PatientRepository;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+//import lombok.extern.slf4j.Slf4j; //SecuritySecurity対応により廃止
 
 /**
  * <h2>共通サービスクラス</h2>
@@ -45,12 +46,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
+//@Slf4j　//SecuritySecurity対応により廃止
 public class CommonService {
 
     /* ====== 依存リポジトリ／サービス ====== */
 
-    private final AdminRepository adminRepository;
+//    private final AdminRepository adminRepository;　//SecuritySecurity対応により廃止
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
     private final AppointmentRepository appointmentRepository;
@@ -59,99 +60,100 @@ public class CommonService {
     private final PatientService patientService;
 
 	/** JWT トークン生成用サービス */
-    private final TokenService tokenService;
+//    private final TokenService tokenService;	//SecuritySecurity対応により廃止
     
     /** パスワードのハッシュ化・照合を行うエンコーダー（例：BCrypt） */
-    private final PasswordEncoder passwordEncoder;
+//    private final PasswordEncoder passwordEncoder;　//SecuritySecurity対応により廃止
 
-    /* -------------------------------------------------------------------------
-     * 1.  トークン検証
-     * ---------------------------------------------------------------------- */
-
-    /**
-     * トークンが有効かどうかを検査する。
-     *
-     * @param token クライアントから渡された JWT
-     * @param userRole トークンを検証したいロール（"admin" / "doctor" / "patient" 等）
-     * @return 無効・期限切れの場合は 401、問題なければ 200
-     */
-    public Optional<String> validateToken(String token, String userRole) {
-
-    	if (!tokenService.validateToken(token, userRole)) {
-            return Optional.of("トークンが無効です");
-        }
-        
-    	return Optional.empty();
-        
-    }
+//SecuritySecurity対応により廃止
+//    /* -------------------------------------------------------------------------
+//     * 1.  トークン検証
+//     * ---------------------------------------------------------------------- */
+//
+//    /**
+//     * トークンが有効かどうかを検査する。
+//     *
+//     * @param token クライアントから渡された JWT
+//     * @param userRole トークンを検証したいロール（"admin" / "doctor" / "patient" 等）
+//     * @return 無効・期限切れの場合は 401、問題なければ 200
+//     */
+//    public Optional<String> validateToken(String token, String userRole) {
+//
+//    	if (!tokenService.validateToken(token, userRole)) {
+//            return Optional.of("トークンが無効です");
+//        }
+//        
+//    	return Optional.empty();
+//        
+//    }
+//    
+//    
+//    /**
+//     * MVC 用の簡易チェック版 : トークンがロールに対して有効かどうか
+//     *
+//     * @param token     クライアントから渡された JWT
+//     * @param userRole  チェックしたいロール ("admin" / "doctor" / "patient")
+//     * @return true  … 有効 / false … 無効または期限切れ
+//     */
+//    public boolean isTokenValid(String token, String userRole) {
+//        return tokenService.validateToken(token, userRole);
+//    }
+//    
     
-    
-    /**
-     * MVC 用の簡易チェック版 : トークンがロールに対して有効かどうか
-     *
-     * @param token     クライアントから渡された JWT
-     * @param userRole  チェックしたいロール ("admin" / "doctor" / "patient")
-     * @return true  … 有効 / false … 無効または期限切れ
-     */
-    public boolean isTokenValid(String token, String userRole) {
-        return tokenService.validateToken(token, userRole);
-    }
-    
-    
-
-    /* -------------------------------------------------------------------------
-     * 2.  管理者ログインの検証
-     * ---------------------------------------------------------------------- */
-
-    /**
-     * 管理者のユーザー名／パスワードを検証し、成功時に新規トークンを返す。
-     *
-     * @param receivedAdmin ログインフォームで受け取った Admin（username・passwordのみ利用）
-     * @return 成功時 : 200 + token / 失敗時 : 401 or 500
-     */
-    public ResponseEntity<Map<String, String>> validateAdmin(Admin receivedAdmin) {
-    	
-    	System.out.println("CommonService 管理者ログインの検証開始");
-
-        Map<String, String> body = new HashMap<>();
-
-        try {
-            /* 1️⃣  ユーザ名で管理者を検索（User.username で一意） */
-        	Optional<Admin> optionalAdmin = adminRepository
-                    .findByUser_Username(receivedAdmin.getUser().getUsername());
-
-			if (optionalAdmin.isEmpty()) {
-				body.put("error", "ユーザー名が存在しません。");
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-			}
-			
-			Admin stored = optionalAdmin.get();  // この時点で null ではない
-
-            /* 2️⃣  パスワードハッシュを照合
-                   - フロントから受信した平文パスワードと、DB に保存済みのハッシュPWを比較          */
-            boolean matches = passwordEncoder.matches(
-                                   receivedAdmin.getUser().getPasswordHash(),   // 平文PW
-                                   stored.getUser().getPasswordHash());              // ハッシュPW
-
-            if (!matches) {
-                body.put("error", "パスワードが一致しません。");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-            }
-
-            /* 3️⃣  認証成功 → JWT 発行 */
-            String token = tokenService.generateToken(stored.getUser().getUsername());
-            
-            body.put("token", token);
-            body.put("message", "ログインに成功しました。");
-
-            return ResponseEntity.ok(body);
-
-        } catch (Exception e) {
-            log.error("管理者認証失敗 : {}", e.getMessage(), e);
-            body.put("error", "内部エラーが発生しました。");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-        }
-    }
+    //SpringSecurity対応により廃止
+//    /* -------------------------------------------------------------------------
+//     * 2.  管理者ログインの検証
+//     * ---------------------------------------------------------------------- */
+//
+//    /**
+//     * 管理者のユーザー名／パスワードを検証し、成功時に新規トークンを返す。
+//     *
+//     * @param receivedAdmin ログインフォームで受け取った Admin（username・passwordのみ利用）
+//     * @return 成功時 : 200 + token / 失敗時 : 401 or 500
+//     */
+//    public ResponseEntity<Map<String, String>> validateAdmin(Admin receivedAdmin) {
+//    	
+//    	System.out.println("CommonService 管理者ログインの検証開始");
+//
+//        Map<String, String> body = new HashMap<>();
+//
+//        try {
+//            /* 1️⃣  ユーザ名で管理者を検索（User.username で一意） */
+//        	Optional<Admin> optionalAdmin = adminRepository
+//                    .findByUser_Username(receivedAdmin.getUser().getUsername());
+//
+//			if (optionalAdmin.isEmpty()) {
+//				body.put("error", "ユーザー名が存在しません。");
+//				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//			}
+//			
+//			Admin stored = optionalAdmin.get();  // この時点で null ではない
+//
+//            /* 2️⃣  パスワードハッシュを照合
+//                   - フロントから受信した平文パスワードと、DB に保存済みのハッシュPWを比較          */
+//            boolean matches = passwordEncoder.matches(
+//                                   receivedAdmin.getUser().getPasswordHash(),   // 平文PW
+//                                   stored.getUser().getPasswordHash());              // ハッシュPW
+//
+//            if (!matches) {
+//                body.put("error", "パスワードが一致しません。");
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//            }
+//
+//            /* 3️⃣  認証成功 → JWT 発行 */
+//            String token = tokenService.generateToken(stored.getUser().getUsername());
+//            
+//            body.put("token", token);
+//            body.put("message", "ログインに成功しました。");
+//
+//            return ResponseEntity.ok(body);
+//
+//        } catch (Exception e) {
+//            log.error("管理者認証失敗 : {}", e.getMessage(), e);
+//            body.put("error", "内部エラーが発生しました。");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+//        }
+//    }
 
     /* -------------------------------------------------------------------------
      * 3.  医師フィルタリング
@@ -276,50 +278,52 @@ public class CommonService {
                 .isEmpty();
     }
 
-    /* -------------------------------------------------------------------------
-     * 6.  患者ログイン検証
-     * ---------------------------------------------------------------------- */
-
-    /**
-     * 患者ログイン用の認証ロジック。
-     *
-     * @param login フロントから渡された username / password
-     * @return 成功時: token, 失敗時: 401
-     */
-    public ResponseEntity<Map<String, String>> validatePatientLogin(Login login) {
-
-        Map<String, String> body = new HashMap<>();
-
-        Patient stored = patientRepository
-                .findByUser_Username(login.getUsername())
-                .orElse(null);
-
-        if (stored == null) {
-            body.put("error", "ユーザー名が存在しません。");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-        }
-
-        /* 2. パスワード検証  */
-        if (!passwordEncoder.matches(
-        							 login.getPassword(),									//平文PW
-        							 stored.getUser().getPasswordHash())) {		//ハッシュPW
-        	
-            body.put("error", "パスワードが一致しません。");
-            
-            System.out.println("login.getPassword():" + "[" + login.getPassword() + "]");
-            System.out.println("patient.getUser().getPasswordHash():" + stored.getUser().getPasswordHash());
-
-            
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-        }
-
-        String token = tokenService.generateToken(login.getUsername());
-        body.put("token", token);
-        body.put("message", "ログインに成功しました。");
-        
-        return ResponseEntity.ok(body);
-        
-    }
+    
+    //SpringSecurity対応により廃止
+//    /* -------------------------------------------------------------------------
+//     * 6.  患者ログイン検証
+//     * ---------------------------------------------------------------------- */
+//
+//    /**
+//     * 患者ログイン用の認証ロジック。
+//     *
+//     * @param login フロントから渡された username / password
+//     * @return 成功時: token, 失敗時: 401
+//     */
+//    public ResponseEntity<Map<String, String>> validatePatientLogin(Login login) {
+//
+//        Map<String, String> body = new HashMap<>();
+//
+//        Patient stored = patientRepository
+//                .findByUser_Username(login.getUsername())
+//                .orElse(null);
+//
+//        if (stored == null) {
+//            body.put("error", "ユーザー名が存在しません。");
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//        }
+//
+//        /* 2. パスワード検証  */
+//        if (!passwordEncoder.matches(
+//        							 login.getPassword(),									//平文PW
+//        							 stored.getUser().getPasswordHash())) {		//ハッシュPW
+//        	
+//            body.put("error", "パスワードが一致しません。");
+//            
+//            System.out.println("login.getPassword():" + "[" + login.getPassword() + "]");
+//            System.out.println("patient.getUser().getPasswordHash():" + stored.getUser().getPasswordHash());
+//
+//            
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//        }
+//
+//        String token = tokenService.generateToken(login.getUsername());
+//        body.put("token", token);
+//        body.put("message", "ログインに成功しました。");
+//        
+//        return ResponseEntity.ok(body);
+//        
+//    }
 
     /* -------------------------------------------------------------------------
      * 7.  患者側の予約履歴フィルタ
@@ -330,34 +334,43 @@ public class CommonService {
      *
      * @param condition "past" / "future" / null
      * @param doctorName 医師名（部分一致, null 可）
-     * @param token 患者特定用トークン
+     * @param userDetails 認証済みの患者情報
      * @return フィルタ結果を格納した ResponseEntity
      */
     public ResponseEntity<Map<String, Object>> filterPatient(String condition,
                                                              String doctorName,
-                                                             String token) {
+                                                             D2_UserDetailsImpl userDetails) {	//SpringSecurity対応により追加
+//                                                             String token) {	//SpringSecurity対応により廃止
     	
     	System.out.println("condition:"+condition);
     	System.out.println("doctorName:"+doctorName);
-    	System.out.println("token:"+token);
+//    	System.out.println("token:"+token);	//SpringSecurity対応により廃止
     	
     	
         Map<String, Object> body = new HashMap<>();
 
-        // トークンから username を抽出
-        String username = tokenService.extractUsername(token);
+      //SpringSecurity対応により廃止
+//        // トークンから username を抽出
+//        String username = tokenService.extractUsername(token);
         
-        if (username == null) {
-            body.put("error", "トークンが無効です。");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-        }
+        // ユーザーから患者情報を取得
+        String username = userDetails.getUsername();
+        
+        //SpringSecurity対応により廃止
+//        if (username == null) {
+//            body.put("error", "トークンが無効です。");
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//        }
 
         // 患者ID の取得
         Optional<Patient> opt = patientRepository.findByUser_Username(username);
+        
         if (opt.isEmpty()) {
             body.put("error", "患者情報が見つかりません。");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
         }
+        
+        // 認証済みの患者IDを取得
         Long patientId = opt.get().getId();
         
         

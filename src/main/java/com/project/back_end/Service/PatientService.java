@@ -17,6 +17,7 @@ import com.project.back_end.Entity.Patient;
 import com.project.back_end.Entity.User;
 import com.project.back_end.Repository.AppointmentRepository;
 import com.project.back_end.Repository.PatientRepository;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final AppointmentRepository appointmentRepository;
-    private final TokenService tokenService;
+//    private final TokenService tokenService;　//　SpringSecurity対応により廃止
     
     private final PasswordEncoder passwordEncoder;   // ★ パスワードハッシュ比較用
 
@@ -192,28 +193,70 @@ public class PatientService {
         }
     }
 
-    /* ----------------------------------------------------------------
-     * 8. トークンを使って患者情報を取得
-     * ------------------------------------------------------------- */
+    // SpringSecurity対応により廃止
+//    /* ----------------------------------------------------------------
+//     * 8. トークンを使って患者情報を取得
+//     * ------------------------------------------------------------- */
+//    /**
+//     * JWT トークン内の username を元に、対応する患者情報を返却する。
+//     *
+//     * @param token JWT トークン
+//     * @return key = <b>patient</b> に {@link Patient} を格納したレスポンス
+//     */
+//    @Transactional(readOnly = true)
+//    public ResponseEntity<Map<String, Object>> getPatientDetails(String token) {
+//
+//        Map<String, Object> body = new HashMap<>();
+//
+//        try {
+//            /* 1) トークンから username を抽出 */
+//            String username = tokenService.extractUsername(token);
+//
+//            /* 2) username で患者を検索（User.username 経由） */
+//            Patient patient = patientRepository.findByUser_Username(username)
+//                                               .orElseThrow(() -> 
+//                                                   new RuntimeException("該当する患者が見つかりません"));
+//
+//            body.put("patient", patient);
+//            return ResponseEntity.ok(body);
+//
+//        } catch (RuntimeException e) {
+//            log.warn("患者情報取得 : {}", e.getMessage());
+//            body.put("error", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+//
+//        } catch (Exception e) {
+//            log.error("患者情報取得失敗: {}", e.getMessage());
+//            body.put("error", "患者情報の取得に失敗しました。");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+//        }
+//    }
+    
+    
+    // SpringSecurity対応により追加
     /**
-     * JWT トークン内の username を元に、対応する患者情報を返却する。
+     * 認証済みの患者ユーザーの詳細情報を取得する。
      *
-     * @param token JWT トークン
-     * @return key = <b>patient</b> に {@link Patient} を格納したレスポンス
+     * <p>このメソッドは、Spring Security によって認証されたユーザー情報から
+     * {@link D2_UserDetailsImpl} を介して username を取得し、対応する {@link Patient}
+     * エンティティを返却する。</p>
+     *
+     * <ul>
+     *   <li>200 OK … 成功時、"patient" キーで患者情報を返す</li>
+     *   <li>404 Not Found … 対応する患者が存在しない</li>
+     *   <li>500 Internal Server Error … その他のエラー</li>
+     * </ul>
+     *
+     * @param userDetails Spring Security により注入された認証済みユーザー情報
+     * @return 患者情報またはエラーメッセージを含むレスポンスエンティティ
      */
     @Transactional(readOnly = true)
-    public ResponseEntity<Map<String, Object>> getPatientDetails(String token) {
-
+    public ResponseEntity<Map<String, Object>> getPatientDetails(D2_UserDetailsImpl userDetails) {
         Map<String, Object> body = new HashMap<>();
 
         try {
-            /* 1) トークンから username を抽出 */
-            String username = tokenService.extractUsername(token);
-
-            /* 2) username で患者を検索（User.username 経由） */
-            Patient patient = patientRepository.findByUser_Username(username)
-                                               .orElseThrow(() -> 
-                                                   new RuntimeException("該当する患者が見つかりません"));
+            Patient patient = patientRepository.findByUser_Username(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("該当する患者が見つかりません"));
 
             body.put("patient", patient);
             return ResponseEntity.ok(body);
@@ -224,10 +267,11 @@ public class PatientService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
 
         } catch (Exception e) {
-            log.error("患者情報取得失敗: {}", e.getMessage());
+            log.error("患者情報取得失敗: {}", e.getMessage(), e);
             body.put("error", "患者情報の取得に失敗しました。");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
         }
     }
+
 
 }

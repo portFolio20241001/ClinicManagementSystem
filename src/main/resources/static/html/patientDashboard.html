@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Clinic - Patient Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9fafb;
+      color: #1f2937;
+    }
+
+    header {
+      background-color: #3b82f6;
+      color: white;
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logout-btn {
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: #dc2626;
+    }
+
+    .container {
+      padding: 2rem;
+      max-width: 960px;
+      margin: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+
+    tr:hover {
+      background-color: #f9fafb;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Smart Clinic - Patient Dashboard
+    <button class="logout-btn" onclick="logout()">ログアウト</button>
+  </header>
+
+  <div class="container">
+    <h2>医師一覧</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>氏名</th>
+          <th>専門</th>
+          <th>電話番号</th>
+          <th>クリニック名</th>
+        </tr>
+      </thead>
+      <tbody id="doctorTableBody">
+        <tr><td colspan="4">読み込み中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function fetchDoctors() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("ログイントークンが見つかりません。ログインし直してください。");
+        return;
+      }
+
+      try {
+        const response = await fetch("/doctor", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("医師情報の取得に失敗しました。");
+        }
+
+        const data = await response.json();
+        const doctorTableBody = document.getElementById("doctorTableBody");
+        doctorTableBody.innerHTML = "";
+
+        data.doctors.forEach(doctor => {
+          const fullName = doctor.user?.fullName || "未登録";
+          const specialty = doctor.specialty || "未設定";
+          const phone = doctor.phone || "不明";
+          const clinicName = doctor.clinicLocation?.name || "未設定";
+
+          const row = `
+            <tr>
+              <td>${fullName}</td>
+              <td>${specialty}</td>
+              <td>${phone}</td>
+              <td>${clinicName}</td>
+            </tr>
+          `;
+          doctorTableBody.insertAdjacentHTML("beforeend", row);
+        });
+
+      } catch (error) {
+        console.error("エラー:", error);
+        alert("医師情報の表示に失敗しました。");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      location.href = "/login";
+    }
+
+    window.onload = fetchDoctors;
+  </script>
+
+</body>
+</html>

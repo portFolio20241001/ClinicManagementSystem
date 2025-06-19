@@ -4,11 +4,12 @@
 package com.project.back_end.Controller;
 
 import java.util.Map;
-import java.util.Optional;
+//import java.util.Optional;	//　SpringSecurity対応により廃止
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.Entity.PrescriptionForMongo;
 import com.project.back_end.Service.AppointmentService;
-import com.project.back_end.Service.CommonService;
+//import com.project.back_end.Service.CommonService;			//　SpringSecurity対応により廃止
 import com.project.back_end.Service.PrescriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,7 +59,7 @@ public class PrescriptionController {
     private final PrescriptionService prescriptionService;
 
     /** 共通ロジック（トークン検証 など） */
-    private final CommonService commonService;
+//    private final CommonService commonService;	//　SpringSecurity対応により廃止
 
     /** 処方箋発行後に予約ステータスを更新するためのサービス */
     private final AppointmentService appointmentService;
@@ -145,7 +146,6 @@ public class PrescriptionController {
      * <p>指定された予約に対し、新しい処方箋を登録する。</p>
      *
      * @param prescription  登録する {@link PrescriptionForMongo}
-     * @param token         医師トークン
      * @return <pre>
      *   201: 登録成功
      *   400: 重複 or バリデーション失敗
@@ -153,24 +153,26 @@ public class PrescriptionController {
      *   500: 内部エラー
      * </pre>
      */
-    @PostMapping("/{token}")
+    
+//    @PostMapping("/{token}")					// SpringSecurity対応により廃止
+    @PostMapping											// SpringSecurity対応により追加
+    @PreAuthorize("hasRole('DOCTOR')")		// SpringSecurity対応により追加
     @Transactional                                     // 書き込み系なので付与
     public ResponseEntity<Map<String, String>> savePrescription(
-            @RequestBody @Valid PrescriptionForMongo prescription,
-            @PathVariable String token) {
-
-        System.out.println("ポイントあ");
+            @RequestBody @Valid PrescriptionForMongo prescription) {
+//            @PathVariable String token) {	// SpringSecurity対応により廃止
     	
-        /* ===== ① トークン検証（doctor ロール） ===== */
-    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
-
-        System.out.println("ポイントあああ");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+    	// SpringSecurity対応により廃止
+//        /* ===== ① トークン検証（doctor ロール） ===== */
+//    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
+//
+//        System.out.println("ポイントあああ");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
 
         /* ===== ② 処方箋登録処理 ===== */
         ResponseEntity<Map<String, String>> result =
@@ -268,7 +270,6 @@ public class PrescriptionController {
      * <p>予約 ID を指定して処方箋を取得する。</p>
      *
      * @param appointmentId 検索対象の予約 ID
-     * @param token         医師トークン
      * @return <pre>
      *   200: 取得成功（key = "prescription"）
      *   401: 認証失敗
@@ -276,21 +277,24 @@ public class PrescriptionController {
      *   500: 内部エラー
      * </pre>
      */
-    @GetMapping("/{appointmentId}/{token}")
+//    @GetMapping("/{appointmentId}/{token}")	//　SpringSecurity対応により廃止
+    @GetMapping("/{appointmentId}")					//　SpringSecurity対応により追加
+    @PreAuthorize("hasRole('DOCTOR')")				//　SpringSecurity対応により追加
     public ResponseEntity<Map<String, Object>> getPrescription(
-            @PathVariable Long appointmentId,
-            @PathVariable String token) {
+            @PathVariable Long appointmentId) {
+//            @PathVariable String token) {				//　SpringSecurity対応により廃止
 
-        /* ===== ① トークン検証（doctor ロール） ===== */
-    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+    	//　SpringSecurity対応により廃止
+//        /* ===== ① トークン検証（doctor ロール） ===== */
+//    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
 
         /* ===== ② 処方箋取得 ===== */
         return prescriptionService.getPrescription(appointmentId);

@@ -19,7 +19,7 @@ import io.jsonwebtoken.security.Keys;
  * JWT の発行・検証・解析を担当するサービスクラス。
  */
 @Service
-public class JwtService {
+public class C_JwtService_B {
 
     // application.properties から取得（例: jwt.secret=6A77394A536B73797A24432646294A404E635266556A586E3272357538782F41）
     @Value("${jwt.secret}")

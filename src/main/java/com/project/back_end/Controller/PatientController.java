@@ -2,10 +2,12 @@ package com.project.back_end.Controller;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+//import java.util.Optional;	//　SpringSecurity対応により廃止
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,8 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.DTO.AppointmentDTO;
-import com.project.back_end.DTO.Login;
+//import com.project.back_end.DTO.Login;	//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Patient;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 import com.project.back_end.Service.CommonService;
 import com.project.back_end.Service.PatientService;
 
@@ -41,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  * ■ 患者登録（サインアップ）
  * ■ 患者ログイン（JWT 発行）
- * ■ トークンから患者基本情報を取得
+ * ■ 認証済みユーザー情報から患者基本情報を取得
  * ■ 患者予約の取得／フィルタ
  * </pre>
  *
@@ -127,22 +130,39 @@ public class PatientController {
      * @param token  患者トークン
      * @return <b>patient</b> キーで {@link Patient} を返却
      */
-    @GetMapping("/{token}")
-    public ResponseEntity<Map<String, Object>> getPatient(@PathVariable String token) {
+    
+    //　SpringSecurity対応により廃止
+//    @GetMapping("/{token}")
+//    public ResponseEntity<Map<String, Object>> getPatient(@PathVariable String token) {
+//
+//        /* ① トークン検証（patient ロールのみ許可） */
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
+//
+//        /* ② Service から患者情報を取得して返却 */
+//        return patientService.getPatientDetails(token);
+//    }
+    
+    //　SpringSecurity対応により追加
+    /*
+     * 認証済み情報（userDetails）から患者の基本情報を取得する。
+     *
+     * @param token  患者トークン
+     * @return <b>patient</b> キーで {@link Patient} を返却
+     */
+    @GetMapping("/patient/details")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<Map<String, Object>> getPatientDetails(
+            @AuthenticationPrincipal D2_UserDetailsImpl userDetails) {
 
-        /* ① トークン検証（patient ロールのみ許可） */
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
-
-        /* ② Service から患者情報を取得して返却 */
-        return patientService.getPatientDetails(token);
+        return patientService.getPatientDetails(userDetails);
     }
 
     /* =========================================================================
@@ -226,73 +246,74 @@ public class PatientController {
         return patientService.createPatient(patient);
     }
 
-    /* =========================================================================
-     * 3. 患者ログイン
-     * ========================================================================= */
-    @Operation(
-    	    summary     = "患者ログイン（JWT 発行）",
-    	    description = "username / password を認証し、成功時に JWT を返却します。",
-    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-    	        required = true,
-    	        content  = @Content(
-    	            schema   = @Schema(implementation = Login.class),
-    	            examples = @ExampleObject(
-    	                name  = "LoginRequest",
-    	                value = """
-    	                        {
-    	                          "username": "patientUser1",
-    	                          "password": "plainPassword"
-    	                        }"""
-    	            )
-    	        )
-    	    ),
-    	    responses = {
-    	        @ApiResponse(
-    	            responseCode = "200",
-    	            description  = "認証成功・JWT 返却",
-    	            content      = @Content(
-    	                mediaType = org.springframework.http.MediaType.APPLICATION_JSON_VALUE,
-    	                examples  = @ExampleObject(
-    	                    value = "{\"token\":\"eyJhbGciOiJIUzI1NiJ9.patientTokenSig\"}"
-    	                )
-    	            )
-    	        ),
-    	        @ApiResponse(
-    	            responseCode = "401",
-    	            description  = """
-    	                           <ul>
-    	                             <li>ユーザー名が存在しない</li>
-    	                             <li>パスワード不一致</li>
-    	                           </ul>""",
-    	            content      = @Content(
-    	                examples = {
-    	                    @ExampleObject(
-    	                        name  = "UserNotFound",
-    	                        value = "{\"error\":\"ユーザー名が存在しません。\"}"
-    	                    ),
-    	                    @ExampleObject(
-    	                        name  = "PasswordMismatch",
-    	                        value = "{\"error\":\"パスワードが一致しません。\"}"
-    	                    )
-    	                }
-    	            )
-    	        )
-    	    }
-    	)
-    /**
-     * 患者ログインを行い、成功時は JWT トークンを返す。
-     *
-     * @param login {@link Login}（username / password）
-     * @return token or error
-     */
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody @Valid Login login) {
-
-        log.info("★ 患者ログイン要求: username={}", login.getUsername());
-        
-        return commonService.validatePatientLogin(login);
-        
-    }
+    //　SpringSecurity対応により廃止
+//    /* =========================================================================
+//     * 3. 患者ログイン
+//     * ========================================================================= */
+//    @Operation(
+//    	    summary     = "患者ログイン（JWT 発行）",
+//    	    description = "username / password を認証し、成功時に JWT を返却します。",
+//    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+//    	        required = true,
+//    	        content  = @Content(
+//    	            schema   = @Schema(implementation = Login.class),
+//    	            examples = @ExampleObject(
+//    	                name  = "LoginRequest",
+//    	                value = """
+//    	                        {
+//    	                          "username": "patientUser1",
+//    	                          "password": "plainPassword"
+//    	                        }"""
+//    	            )
+//    	        )
+//    	    ),
+//    	    responses = {
+//    	        @ApiResponse(
+//    	            responseCode = "200",
+//    	            description  = "認証成功・JWT 返却",
+//    	            content      = @Content(
+//    	                mediaType = org.springframework.http.MediaType.APPLICATION_JSON_VALUE,
+//    	                examples  = @ExampleObject(
+//    	                    value = "{\"token\":\"eyJhbGciOiJIUzI1NiJ9.patientTokenSig\"}"
+//    	                )
+//    	            )
+//    	        ),
+//    	        @ApiResponse(
+//    	            responseCode = "401",
+//    	            description  = """
+//    	                           <ul>
+//    	                             <li>ユーザー名が存在しない</li>
+//    	                             <li>パスワード不一致</li>
+//    	                           </ul>""",
+//    	            content      = @Content(
+//    	                examples = {
+//    	                    @ExampleObject(
+//    	                        name  = "UserNotFound",
+//    	                        value = "{\"error\":\"ユーザー名が存在しません。\"}"
+//    	                    ),
+//    	                    @ExampleObject(
+//    	                        name  = "PasswordMismatch",
+//    	                        value = "{\"error\":\"パスワードが一致しません。\"}"
+//    	                    )
+//    	                }
+//    	            )
+//    	        )
+//    	    }
+//    	)
+//    /**
+//     * 患者ログインを行い、成功時は JWT トークンを返す。
+//     *
+//     * @param login {@link Login}（username / password）
+//     * @return token or error
+//     */
+//    @PostMapping("/login")
+//    public ResponseEntity<Map<String, String>> login(@RequestBody @Valid Login login) {
+//
+//        log.info("★ 患者ログイン要求: username={}", login.getUsername());
+//        
+//        return commonService.validatePatientLogin(login);
+//        
+//    }
 
     /* =========================================================================
      * 4. 患者の予約取得
@@ -392,20 +413,24 @@ public class PatientController {
      * @param token 認証トークン（patient ロール）
      * @return 患者の予約リスト
      */
-    @GetMapping("/appointments/{id}/{token}")
+    
+//    @GetMapping("/appointments/{id}/{token}")　//　SpringSecurity対応により廃止
+    @GetMapping("/appointments/{id}")		//　SpringSecurity対応により追加
     public ResponseEntity<?> getPatientAppointment(
-            @PathVariable Long id,
-            @PathVariable String token) {
+            @PathVariable Long id){
+            
+         //　SpringSecurity対応により廃止
+//            @PathVariable String token) {	//　SpringSecurity対応により廃止
 
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
         
         return patientService.getPatientAppointment(id);
     }
@@ -520,28 +545,33 @@ public class PatientController {
      *
      * @param condition past / future など
      * @param name      医師名（部分一致）
-     * @param token     認証トークン
+     * @param userDetails     認証ユーザ情報
      * @return フィルタ結果
      */
-    @GetMapping("/appointments/filter/{condition}/{name}/{token}")
+    
+//    @GetMapping("/appointments/filter/{condition}/{name}/{token}")	//　SpringSecurity対応により廃止
+    @GetMapping("/appointments/filter/{condition}/{name}")	//　SpringSecurity対応により追加
     public ResponseEntity<?> filterPatientAppointment(
             @PathVariable String condition,
             @PathVariable String name,
-            @PathVariable String token) {
+            @AuthenticationPrincipal D2_UserDetailsImpl userDetails) {	//　SpringSecurity対応により追加
+            
+//            @PathVariable String token) {	//　SpringSecurity対応により廃止
 
         log.debug("患者予約フィルタ: condition={}, name={}", condition, name);
         
+     //　SpringSecurity対応により廃止 
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
         
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
-        
-        return commonService.filterPatient(condition, name, token);
+//        return commonService.filterPatient(condition, name, token);	//　SpringSecurity対応により廃止
+        return commonService.filterPatient(condition, name, userDetails);		//　SpringSecurity対応により追加
     }
 }

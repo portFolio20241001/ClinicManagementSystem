@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+//import java.util.Optional;	//　SpringSecurity対応により廃止
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,7 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.project.back_end.DTO.Login;
+//import com.project.back_end.DTO.Login;	//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Doctor;
 import com.project.back_end.Entity.User;
@@ -39,7 +39,7 @@ public class DoctorService {
     private final UserRepository userRepository;
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
-    private final TokenService tokenService;
+//    private final TokenService tokenService; //　SpringSecurity対応により廃止
     
     private final PasswordEncoder passwordEncoder;   // ★ パスワードハッシュ比較用
     
@@ -341,67 +341,67 @@ public class DoctorService {
     }
 
 
-
-    /* =================================================================
-     * 0.  医師ログイン  -------------------------------------------------
-     * ================================================================= */
-    /**
-     * <pre>
-     * 医師ログイン認証を行い、成功したら JWT トークンを返す。
-     *
-     * 1) username が存在するかチェック
-     * 2) 平文パスワードとハッシュの一致を確認
-     * 3) TokenService でトークンを生成
-     * </pre>
-     *
-     * @param login {@link Login} ・・・ username / password を受け取る DTO
-     * @return token を格納した 200 OK, 失敗時は 401 あるいは 500
-     */
-    public ResponseEntity<Map<String, String>> doctorLogin(Login login) {
-
-        Map<String, String> body = new HashMap<>();
-
-        try {
-
-            /* 1. ユーザー名で医師を取得（User.username で検索） */
-            Optional<Doctor> opt = doctorRepository.findByUser_Username(login.getUsername());
-
-            if (opt.isEmpty()) {
-                body.put("error", "ユーザー名が存在しません。");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-            }
-
-            Doctor doctor = opt.get();
-            
-            /* 2. パスワード検証  */
-            if (!passwordEncoder.matches(
-            							 login.getPassword(),									//平文PW
-                                         doctor.getUser().getPasswordHash())) {		//ハッシュPW
-            	
-                body.put("error", "パスワードが一致しません。");
-                
-                System.out.println("login.getPassword():" + "[" + login.getPassword() + "]");
-                System.out.println("doctor.getUser().getPasswordHash():" + doctor.getUser().getPasswordHash());
-
-                
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-                
-            }
-
-            /* 3. JWT トークン生成  */
-            String token = tokenService.generateToken(doctor.getUser().getUsername());
-
-            body.put("token",   token);
-            body.put("message", "ログインに成功しました。");
-
-            return ResponseEntity.ok(body);
-
-        } catch (Exception e) {
-            log.error("医師ログイン処理で例外発生: {}", e.getMessage());
-            body.put("error", "内部エラーが発生しました。");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-        }
-    }
+    // SpringSecurity対応により廃止
+//    /* =================================================================
+//     * 0.  医師ログイン  -------------------------------------------------
+//     * ================================================================= */
+//    /**
+//     * <pre>
+//     * 医師ログイン認証を行い、成功したら JWT トークンを返す。
+//     *
+//     * 1) username が存在するかチェック
+//     * 2) 平文パスワードとハッシュの一致を確認
+//     * 3) TokenService でトークンを生成
+//     * </pre>
+//     *
+//     * @param login {@link Login} ・・・ username / password を受け取る DTO
+//     * @return token を格納した 200 OK, 失敗時は 401 あるいは 500
+//     */
+//    public ResponseEntity<Map<String, String>> doctorLogin(Login login) {
+//
+//        Map<String, String> body = new HashMap<>();
+//
+//        try {
+//
+//            /* 1. ユーザー名で医師を取得（User.username で検索） */
+//            Optional<Doctor> opt = doctorRepository.findByUser_Username(login.getUsername());
+//
+//            if (opt.isEmpty()) {
+//                body.put("error", "ユーザー名が存在しません。");
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//            }
+//
+//            Doctor doctor = opt.get();
+//            
+//            /* 2. パスワード検証  */
+//            if (!passwordEncoder.matches(
+//            							 login.getPassword(),									//平文PW
+//                                         doctor.getUser().getPasswordHash())) {		//ハッシュPW
+//            	
+//                body.put("error", "パスワードが一致しません。");
+//                
+//                System.out.println("login.getPassword():" + "[" + login.getPassword() + "]");
+//                System.out.println("doctor.getUser().getPasswordHash():" + doctor.getUser().getPasswordHash());
+//
+//                
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+//                
+//            }
+//
+//            /* 3. JWT トークン生成  */
+//            String token = tokenService.generateToken(doctor.getUser().getUsername());
+//
+//            body.put("token",   token);
+//            body.put("message", "ログインに成功しました。");
+//
+//            return ResponseEntity.ok(body);
+//
+//        } catch (Exception e) {
+//            log.error("医師ログイン処理で例外発生: {}", e.getMessage());
+//            body.put("error", "内部エラーが発生しました。");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+//        }
+//    }
 
     /**
      * 名前を部分一致で医師検索。

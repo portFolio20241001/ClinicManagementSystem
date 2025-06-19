@@ -3,13 +3,13 @@ package com.project.back_end.Controller;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.back_end.Entity.Appointment;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 import com.project.back_end.Service.AppointmentService;
 import com.project.back_end.Service.CommonService;
 
@@ -55,15 +56,18 @@ public class AppointmentController {
 
     /** 予約関連ビジネスロジック */
     private final AppointmentService appointmentService;
-    /** トークン検証／予約検証などの共通ロジック */
-    private final CommonService       commonService;
+    
+//    /** トークン検証／予約検証などの共通ロジック */                 
+    private final CommonService       commonService;	    
 
     /** コンストラクタ・インジェクション */
     @Autowired
     public AppointmentController(AppointmentService appointmentService,
                                  CommonService service) {
         this.appointmentService = appointmentService;
-        this.commonService            = service;
+        
+        this.commonService            = service;    
+        
     }
     
     
@@ -138,21 +142,29 @@ public class AppointmentController {
      *
      * @return 200：予約一覧 / その他：検証失敗
      */
-    @GetMapping("/{doctorId}/{date}/{token}")
+    
+//    @GetMapping("/{doctorId}/{date}/{token}")　SecuritySecurity対応により廃止
+    
+    @GetMapping("/{doctorId}/{date}")     // SecuritySecurity対応により追加
+    @PreAuthorize("hasRole('DOCTOR')")   // SecuritySecurity対応により追加
     public ResponseEntity<Map<String, Object>> getAppointmentsByDate(
             @PathVariable Long doctorId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @PathVariable String token) {
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    	
+    		//SecuritySecurity対応により廃止
+           //@PathVariable String token) {
 
-        // トークン検証（doctor ロール）
-        Optional<String> hasError = commonService.validateToken(token, "doctor");
-        if (hasError.isPresent()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                 .body(Map.of("error", hasError.get()));
-        }
+//        // トークン検証（doctor ロール）
+//        Optional<String> hasError = commonService.validateToken(token, "doctor");
+//        if (hasError.isPresent()) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                                 .body(Map.of("error", hasError.get()));
+//        }
 
         // 指定日付の予約一覧を取得
-        return appointmentService.getAppointmentsByDate(doctorId, date, token);
+//        return appointmentService.getAppointmentsByDate(doctorId, date, token);     // SecuritySecurity対応により廃止
+        return appointmentService.getAppointmentsByDate(doctorId, date);     				// SecuritySecurity対応により追加
+        
     }
     
 
@@ -224,29 +236,37 @@ public class AppointmentController {
      *
      * @return 200：予約一覧 / その他：検証失敗
      */
-    @GetMapping("/{doctorId}/{date}/{patientName}/{token}")
+    
+//    @GetMapping("/{doctorId}/{date}/{patientName}/{token}")       // SpringSecurity対応により廃止
+    
+    @GetMapping("/{doctorId}/{date}/{patientName}")	  // SecuritySecurity対応により追加
+    @PreAuthorize("hasRole('DOCTOR')")							  // SecuritySecurity対応により追加
     public ResponseEntity<Map<String, Object>> getAppointments(
             @PathVariable Long doctorId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @PathVariable String patientName,
-            @PathVariable String token) {
+            @PathVariable String patientName) {
+            
+            // SpringSecurity対応により廃止
+//            @PathVariable String token) {
 
-        /* ===== 1. トークン検証（doctor ロール） ===== */
-    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
 
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+//        /* ===== 1. トークン検証（doctor ロール） ===== */
+//    	Optional<String> hasError = commonService.validateToken(token, "doctor");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
         
         System.out.println("aaaaaa");
 
         /* ===== 2. 予約一覧取得　返却 ===== */
-        return appointmentService.getAppointments(doctorId, date, patientName, token);
-
+//        return appointmentService.getAppointments(doctorId, date, patientName, token);	// SecuritySecurity対応により廃止
+        return appointmentService.getAppointments(doctorId, date, patientName);	// SecuritySecurity対応により追加
+        
     }
 
     /* =====================================================================
@@ -321,21 +341,30 @@ public class AppointmentController {
      * @param token        患者トークン
      * @return 201：作成成功 / 400・409 など
      */
-    @PostMapping("/{token}")
+    
+//    @PostMapping("/{token}")   // SpringSecurity対応により廃止
+    @PostMapping											// SpringSecurity対応により追加
+    @PreAuthorize("hasRole('PATIENT')")		// SpringSecurity対応により追加
     public ResponseEntity<Map<String, String>> bookAppointment(
             @RequestBody @Valid Appointment appointment,
-            @PathVariable String token) {
+            @AuthenticationPrincipal D2_UserDetailsImpl userDetails) {				// SpringSecurity対応により追加
+            
+         // SpringSecurity対応により廃止
+//            @PathVariable String token) {
 
-        /* トークン検証（patient ロール） */
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+//        /* トークン検証（patient ロール） */
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
+    	
+        Long patientId = userDetails.getUser().getId();
+        appointment.getPatient().setId(patientId);	//Id付けなおし念のため　患者ロールをもった認証ユーザのIDをセット
 
         Map<String, String> res = new HashMap<>();
 
@@ -408,21 +437,26 @@ public class AppointmentController {
      * @param appointment 更新内容
      * @return 200：更新成功 / 4xx：エラー
      */
-    @PutMapping("/{token}")
+    
+//    @PutMapping("/{token}")	 // SpringSecurity対応により廃止
+    @PutMapping											// SpringSecurity対応により追加
+    @PreAuthorize("hasRole('PATIENT')")		// SpringSecurity対応により追加
     public ResponseEntity<Map<String, String>> updateAppointment(
-            @PathVariable String token,
             @RequestBody @Valid Appointment appointment) {
 
-        /* トークン検証（patient ロール） */
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
-        
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
+    	// SpringSecurity対応により廃止
+//        @PathVariable String token,
+//    	
+//        /* トークン検証（patient ロール） */
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
 
         return appointmentService.updateAppointment(appointment);
     }
@@ -466,22 +500,30 @@ public class AppointmentController {
      * @param token 患者トークン
      * @return 200：キャンセル成功 / 4xx：エラー
      */
-    @DeleteMapping("/{id}/{token}")
+    
+//    @DeleteMapping("/{id}/{token}")	 // SpringSecurity対応により廃止
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Map<String, String>> cancelAppointment(
-            @PathVariable Long id,
-            @PathVariable String token) {
+            @PathVariable Long id) {
+            
+            
+    	// SpringSecurity対応により廃止
+//            @PathVariable String token) {
+//
+//        /* トークン検証（patient ロール） */
+//    	Optional<String> hasError = commonService.validateToken(token, "patient");  
+//
+//        System.out.println("ポイント1");
+//        
+//        if (hasError.isPresent()) {
+//            // 認証エラーをそのまま返す
+//        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("error", hasError.get()));
+//        }
 
-        /* トークン検証（patient ロール） */
-    	Optional<String> hasError = commonService.validateToken(token, "patient");  
-
-        System.out.println("ポイント1");
+//        return appointmentService.cancelAppointment(id, token);	// SpringSecurity対応により廃止
+    	  return appointmentService.cancelAppointment(id);
         
-        if (hasError.isPresent()) {
-            // 認証エラーをそのまま返す
-        	return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", hasError.get()));
-        }
-
-        return appointmentService.cancelAppointment(id, token);
     }
 }

@@ -1,39 +1,32 @@
 package com.project.back_end.Mvc;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-
-import com.project.back_end.Service.CommonService;
 
 @Controller
 public class DashboardController {
 
-    @Autowired
-    private CommonService commonservice;
-
     // 管理者ダッシュボード
-    @GetMapping("/adminDashboard/{token}")
-    public String adminDashboard(@PathVariable String token) {
-        boolean isValid = commonservice.isTokenValid(token, "admin");
-
-        if (isValid) {
-            return "admin/adminDashboard"; // templates/admin/adminDashboard.html
-        } else {
-            return "redirect:/"; // トップページ（ログイン画面など）にリダイレクト
+    @GetMapping("/dashboard")
+    public String redirectBasedOnRole() {
+    	
+    	System.out.println("aaa");
+    	
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth != null && auth.isAuthenticated()) {
+            for (GrantedAuthority authority : auth.getAuthorities()) {
+                String role = authority.getAuthority();
+                return switch (role) {
+                    case "ROLE_ADMIN" -> "admin/adminDashboard";
+                    case "ROLE_DOCTOR" -> "doctor/doctorDashboard";
+                    case "ROLE_PATIENT" -> "patient/patientDashboard";
+                    default -> "redirect:/login";
+                };
+            }
         }
-    }
-
-    // 医師ダッシュボード
-    @GetMapping("/doctorDashboard/{token}")
-    public String doctorDashboard(@PathVariable String token) {
-        boolean isValid = commonservice.isTokenValid(token, "doctor");
-
-        if (isValid) {
-            return "doctor/doctorDashboard"; // templates/doctor/doctorDashboard.html
-        } else {
-            return "redirect:/";
-        }
+        return "redirect:/login";
     }
 }

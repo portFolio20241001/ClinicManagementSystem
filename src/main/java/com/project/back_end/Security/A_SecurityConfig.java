@@ -30,9 +30,9 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableMethodSecurity // @PreAuthorize などを有効化
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class A_SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+    private final B_JwtAuthFilter_A jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
     /**
@@ -48,14 +48,19 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 // === ログイン画面・静的リソース・APIログインは全員アクセス許可 ===
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/", "/login/**", "/html/**","/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // === DoctorController ===
+                .requestMatchers("/doctor/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/doctor").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/doctor").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/doctor/availability/doctorId/**").hasRole("PATIENT")
+                .requestMatchers(HttpMethod.GET, "/doctor/doctorDashboard/**").hasRole("DOCTOR")
+
+                
+                
 
                 // === AppointmentController ===
                 .requestMatchers(HttpMethod.POST, "/appointments").hasRole("PATIENT")

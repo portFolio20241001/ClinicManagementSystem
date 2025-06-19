@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class D1_UserDetailsServiceImpl_AB implements UserDetailsService {
 
     private final UserRepository userRepository;
 
@@ -35,6 +35,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("ユーザーが見つかりません: " + username));
 
-        return new UserDetailsImpl(user);
+        return new D2_UserDetailsImpl(user);
     }
 }

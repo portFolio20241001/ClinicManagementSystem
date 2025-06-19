@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Doctor Dashboard - Smart Clinic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+
+        header {
+            background: linear-gradient(to right, #3b82f6, #2563eb);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        #availabilityTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #availabilityTable th, #availabilityTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logout-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    Smart Clinic - 医師ダッシュボード
+</header>
+
+<div class="container">
+    <h2>ようこそ、<span id="doctorName">医師</span> さん</h2>
+
+    <div>
+        <label for="dateSelect">📅 空き時間を確認する日付:</label>
+        <input type="date" id="dateSelect" />
+        <button onclick="fetchAvailability()">取得</button>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <h3>🕐 空き時間一覧</h3>
+        <table id="availabilityTable">
+            <thead>
+                <tr><th>時間帯</th></tr>
+            </thead>
+            <tbody id="availabilityBody">
+                <tr><td>選択された日付の空き時間を表示</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">ログアウト</button>
+</div>
+
+<script>
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const doctorName = localStorage.getItem("username"); // 任意で保存していた場合
+
+    // 表示用
+    document.getElementById("doctorName").textContent = doctorName || "医師";
+
+    // デフォルトで今日の日付セット
+    document.getElementById("dateSelect").valueAsDate = new Date();
+
+    async function fetchAvailability() {
+        const date = document.getElementById("dateSelect").value;
+        const doctorId = 2; // TODO: ログインしたユーザーのdoctorIdを取得 or APIから自己情報取得
+
+        const res = await fetch(`/doctor/availability/${doctorId}/${date}`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const tbody = document.getElementById("availabilityBody");
+        tbody.innerHTML = "";
+
+        if (res.ok) {
+            const data = await res.json();
+            const times = data.availableTimes;
+
+            if (times.length === 0) {
+                tbody.innerHTML = "<tr><td>空き時間はありません。</td></tr>";
+            } else {
+                times.forEach(time => {
+                    const row = `<tr><td>${time}</td></tr>`;
+                    tbody.innerHTML += row;
+                });
+            }
+        } else {
+            tbody.innerHTML = "<tr><td>取得に失敗しました（認証エラーなど）</td></tr>";
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "/";
+    }
+
+    // 初回ロード時に取得
+    window.onload = fetchAvailability;
+</script>
+
+</body>
+</html>

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.project.back_end.DTO.AppointmentDTO;
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Payment;
 import com.project.back_end.Repository.AppointmentRepository;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
-    private final TokenService tokenService;
+//    private final TokenService tokenService; SpringSecurity導入したため削除
     private final CommonService service; // validateAppointment()を持つサービス
 
 //  private final PatientRepository patientRepository;
@@ -132,11 +134,14 @@ public class AppointmentService {
      * @return 処理結果メッセージを含むHTTPレスポンス
      */
     @Transactional
-    public ResponseEntity<Map<String, String>> cancelAppointment(Long appointmentId, String token) {
+//    public ResponseEntity<Map<String, String>> cancelAppointment(Long appointmentId, String token) {	//	springSecurity追加対応により廃止
+    public ResponseEntity<Map<String, String>> cancelAppointment(Long appointmentId) {							//　springSecurity追加対応により追加
+    	
         Map<String, String> response = new HashMap<>();
 
-        // トークンから患者IDを取得
-        Long patientId = tokenService.getPatientIdFromToken(token);
+        //   トークンから患者IDを取得
+        //   Long patientId = tokenService.getPatientIdFromToken(token);   SpringSecurity追加対応により廃止
+        Long patientId = getCurrentPatientId();	//　 SpringSecurity追加対応により追加
         
         if (patientId == null) {
             response.put("error", "無効なトークンです。");
@@ -178,15 +183,16 @@ public class AppointmentService {
      * @return 予約リストを含むレスポンス
      */
     @Transactional(readOnly = true)
-    public ResponseEntity<Map<String, Object>> getAppointmentsByDate(Long doctorId, LocalDate date, String token) {
+//    public ResponseEntity<Map<String, Object>> getAppointmentsByDate(Long doctorId, LocalDate date, String token) {	// SecuritySecurity対応により追加
+   	public ResponseEntity<Map<String, Object>> getAppointmentsByDate(Long doctorId, LocalDate date) {
     	
         Map<String, Object> response = new HashMap<>();
         
-        // トークンの有効性チェック
-        if (!tokenService.isValidToken(token)) {
-            response.put("error", "無効なトークンです。");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
+        // トークンの有効性チェック　　SpringSecurity追加対応により廃止
+		//        if (!tokenService.isValidToken(token)) {
+		//            response.put("error", "無効なトークンです。");
+		//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+		//        }
 
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
@@ -217,15 +223,19 @@ public class AppointmentService {
      * @return 予約リストを含むレスポンス
      */
     @Transactional(readOnly = true)
-    public ResponseEntity<Map<String, Object>> getAppointments(Long doctorId, LocalDate date, String patientName, String token) {
+//    public ResponseEntity<Map<String, Object>> getAppointments(Long doctorId, LocalDate date, String patientName, String token) {  SpringSecurity追加対応により廃止
+   	public ResponseEntity<Map<String, Object>> getAppointments(				//　SpringSecurity追加対応により追加
+   																				Long doctorId, 				//　SpringSecurity追加対応により追加
+   																				LocalDate date, 			//　SpringSecurity追加対応により追加
+   																				String patientName) {	//　SpringSecurity追加対応により追加
     	
         Map<String, Object> response = new HashMap<>();
 
-        // トークンの有効性チェック
-        if (!tokenService.isValidToken(token)) {
-            response.put("error", "無効なトークンです。");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
+        // トークンの有効性チェック　　SpringSecurity追加対応により廃止
+		//        if (!tokenService.isValidToken(token)) {
+		//            response.put("error", "無効なトークンです。");
+		//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+		//        }
 
         // 指定日の00:00～23:59:59.999を表すLocalDateTimeを作成
         LocalDateTime startOfDay = date.atStartOfDay();
@@ -294,6 +304,11 @@ public class AppointmentService {
             log.warn("予約ステータス更新に失敗しました。id={}, status={}, cause={}",
                       appointmentId, newStatus, e.toString());
         }
+    }
+    
+    private Long getCurrentPatientId() {
+        D2_UserDetailsImpl userDetails = (D2_UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return userDetails.getUser().getId();
     }
     
 }

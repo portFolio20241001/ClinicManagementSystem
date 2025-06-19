@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
  * アプリケーションの User エンティティをラップして、必要な情報（ユーザー名、パスワード、ロールなど）を提供します。
  */
 @RequiredArgsConstructor
-public class UserDetailsImpl implements UserDetails {
+public class D2_UserDetailsImpl implements UserDetails {
 
     /**
 	 * Javaの「直列化（シリアライズ）」に使われます。

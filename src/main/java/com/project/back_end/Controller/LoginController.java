@@ -8,15 +8,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.project.back_end.DTO.LoginRequest;
 import com.project.back_end.DTO.LoginResponse;
-import com.project.back_end.Security.JwtService;
-import com.project.back_end.Security.UserDetailsImpl;
+import com.project.back_end.Security.C_JwtService_B;
+import com.project.back_end.Security.D2_UserDetailsImpl;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,8 +31,10 @@ import lombok.RequiredArgsConstructor;
  * <p>
  * ユーザー名・パスワードを受け取り、認証成功時に JWT を発行してクライアントへ返却します。
  */
-@RestController // REST API を提供するコントローラーとして宣言
-@RequestMapping("/api/auth") // ベースとなるURLパスの指定（例: /api/auth/login）
+
+//@RequestMapping("/api/auth") // ベースとなるURLパスの指定（例: /api/auth/login）
+
+@Controller
 @RequiredArgsConstructor // コンストラクタインジェクションを自動生成
 public class LoginController {
 
@@ -39,10 +42,28 @@ public class LoginController {
     private final AuthenticationManager authenticationManager;
 
     // JWTトークンの発行・検証などを担当するサービスをDI
-    private final JwtService jwtService;
+    private final C_JwtService_B jwtService;
     
     
-    
+    /**
+     * ルートアクセス時にログイン画面へリダイレクト
+     */
+    @GetMapping("/")
+    public String redirectToLogin() {
+        return "redirect:/login";
+    }
+
+    /**
+     * ログイン画面（login.html）表示
+     */
+    @GetMapping("/login")
+    public String showLoginPage() {
+        return "login"; // → templates/login.html
+    }
+
+    /**
+     * ログイン処理（JWTトークンを返すAPI）
+     */
     
     @Operation(
     	    summary = "ユーザーのログイン認証を行う　(SpringSecuriyのJWTFilter認証)",
@@ -78,7 +99,8 @@ public class LoginController {
      * @param request クライアントからのログインリクエスト（ユーザー名・パスワード）
      * @return JWT トークンとユーザーのロール情報
      */
-    @PostMapping("/login") // HTTP POST /api/auth/login にマッピング
+    @PostMapping("/api/auth/login") // HTTP POST /api/auth/login にマッピング
+    @ResponseBody
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
     	
     	System.out.println("ログイン認証開始");
@@ -99,7 +121,7 @@ public class LoginController {
 	
 	        // === 認証成功時のユーザー情報取得 ===
 	        // 認証済みユーザーの情報を UserDetailsImpl 型にキャストして取得
-	        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+	        D2_UserDetailsImpl userDetails = (D2_UserDetailsImpl) authentication.getPrincipal();
 	        
 	        System.out.println("userDetails.getUser()：" + userDetails.getUser());
 	        

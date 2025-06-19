@@ -44,10 +44,10 @@ import java.io.IOException;
  */
 @Component
 @RequiredArgsConstructor
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class B_JwtAuthFilter_A extends OncePerRequestFilter {
 
     /** JWTの発行・検証・抽出などを行うサービス */
-    private final JwtService jwtService;
+    private final C_JwtService_B jwtService;
 
     /** ユーザー情報をデータベース等から取得するサービス */
     private final UserDetailsService userDetailsService;

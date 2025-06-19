@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Clinic - Admin Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+    }
+
+    header {
+      background-color: #1e3a8a;
+      color: white;
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    h2 {
+      color: #1e40af;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e5e7eb;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      background-color: #2563eb;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+
+    .btn-danger {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Smart Clinic Admin Dashboard
+    <button onclick="logout()" class="btn btn-danger">ログアウト</button>
+  </header>
+
+  <div class="container">
+    <h2>医師管理</h2>
+
+    <div class="form-group">
+      <label for="doctorName">医師名</label>
+      <input type="text" id="doctorName">
+    </div>
+    <div class="form-group">
+      <label for="specialty">専門</label>
+      <input type="text" id="specialty">
+    </div>
+    <div class="form-group">
+      <label for="phone">電話番号</label>
+      <input type="text" id="phone">
+    </div>
+    <div class="form-group">
+      <label for="clinic">クリニック</label>
+      <input type="text" id="clinic">
+    </div>
+    <button class="btn" onclick="addDoctor()">追加</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>医師名</th>
+          <th>専門</th>
+          <th>電話番号</th>
+          <th>クリニック</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="doctorTableBody">
+        <!-- 医師データがここに入る -->
+      </tbody>
+    </table>
+  </div>
+
+
+
+  <script>
+    async function fetchDoctors() {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/doctor", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      const tbody = document.getElementById("doctorTableBody");
+      tbody.innerHTML = "";
+
+      data.doctors.forEach(doctor => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${doctor.user?.fullName || "未登録"}</td>
+          <td>${doctor.specialty || "未設定"}</td>
+          <td>${doctor.phone || "不明"}</td>
+          <td>${doctor.clinicLocation?.name || "未設定"}</td>
+          <td>
+            <button class="btn" onclick="editDoctor(${doctor.id})">更新</button>
+            <button class="btn btn-danger" onclick="deleteDoctor(${doctor.id})">削除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addDoctor() {
+      // 入力された値を使ってAPIへPOSTする処理を書く
+      alert("追加処理を書く必要があります");
+    }
+
+    function editDoctor(id) {
+      alert("医師ID " + id + " の更新処理を書く必要があります");
+    }
+
+    function deleteDoctor(id) {
+      alert("医師ID " + id + " の削除処理を書く必要があります");
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      location.href = "/login";
+    }
+
+    window.onload = fetchDoctors;
+  </script>
+  
+  
+</body>
+</html>
