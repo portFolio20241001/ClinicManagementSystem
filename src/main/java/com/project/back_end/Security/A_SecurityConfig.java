@@ -34,7 +34,9 @@ public class A_SecurityConfig {
 
     private final B_JwtAuthFilter_A jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint; // ★SpringSecurity対応により追加
 
+    
     /**
      * セキュリティフィルターの定義と、認可ルールを構成。
      *
@@ -53,11 +55,12 @@ public class A_SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // === DoctorController ===
-                .requestMatchers("/doctor/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/doctor/availability/doctorId/**").hasAnyRole("PATIENT", "DOCTOR")
+                .requestMatchers(HttpMethod.GET, "/doctor/doctorDashboard/**").hasRole("DOCTOR")
+                .requestMatchers(HttpMethod.GET, "/doctor/**").permitAll()
+                
                 .requestMatchers(HttpMethod.POST, "/doctor").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/doctor").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/doctor/availability/doctorId/**").hasRole("PATIENT")
-                .requestMatchers(HttpMethod.GET, "/doctor/doctorDashboard/**").hasRole("DOCTOR")
 
                 
                 
@@ -74,11 +77,19 @@ public class A_SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/prescription/*").hasRole("DOCTOR")
 
                 // === PatientController ===
+                .requestMatchers(HttpMethod.POST, "/patient").permitAll()
                 .requestMatchers(HttpMethod.GET, "/patient/**").hasRole("PATIENT")
 
                 // その他のリクエストはすべて認証が必要
                 .anyRequest().authenticated()
             )
+            
+            
+            // ★ トークン認証エラー時のカスタムレスポンス ※SpringSecurity対応により追加
+            .exceptionHandling(ex -> 
+                ex.authenticationEntryPoint(customAuthenticationEntryPoint)
+            )
+            
             
             //以下はSessionベースのFormログイン認証の場合　今回はJWTなので不要
 //            .formLogin(form -> form

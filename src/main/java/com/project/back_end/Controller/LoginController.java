@@ -66,25 +66,37 @@ public class LoginController {
      */
     
     @Operation(
-    	    summary = "ユーザーのログイン認証を行う　(SpringSecuriyのJWTFilter認証)",
-    	    description = "ユーザー名とパスワードを受け取り、認証に成功した場合はJWTトークンとユーザーロールを返却します。",
+    	    summary = "ユーザーのログイン認証を行う（JWTトークン返却　Admin　Patient　Doctor共通）",
+    	    description = "ユーザー名とパスワードを受け取り、JWTトークンとユーザーロールを返却します。認証に失敗した場合は401を返します。",
+    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	        required = true,
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            schema = @Schema(implementation = LoginRequest.class),
+    	            examples = {
+    	                @ExampleObject(name = "Admin Login", value = "{\n  \"username\": \"adminUser1\",\n  \"password\": \"addpass1\"\n}"),
+    	                @ExampleObject(name = "Doctor Login", value = "{\n  \"username\": \"doctorUser1\",\n  \"password\": \"docpass1\"\n}"),
+    	                @ExampleObject(name = "Patient Login", value = "{\n  \"username\": \"patientUser1\",\n  \"password\": \"patpass1\"\n}")
+    	            }
+    	        )
+    	    ),
     	    responses = {
     	        @ApiResponse(
     	            responseCode = "200",
-    	            description = "ログイン成功。JWTトークンとロールが返却されます。",
+    	            description = "ログイン成功（JWTトークンとロール返却）",
     	            content = @Content(
     	                mediaType = "application/json",
     	                schema = @Schema(implementation = LoginResponse.class),
     	                examples = {
-    	                    @ExampleObject(name = "Admin Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_ADMIN\"\n}"),
-    	                    @ExampleObject(name = "Doctor Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_DOCTOR\"\n}"),
-    	                    @ExampleObject(name = "Patient Login", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_PATIENT\"\n}")
+    	                    @ExampleObject(name = "Admin Success", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_ADMIN\"\n}"),
+    	                    @ExampleObject(name = "Doctor Success", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_DOCTOR\"\n}"),
+    	                    @ExampleObject(name = "Patient Success", value = "{\n  \"token\": \"eyJhbGciOiJIUzM4NCJ9...\",\n  \"role\": \"ROLE_PATIENT\"\n}")
     	                }
     	            )
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "認証失敗。ユーザー名またはパスワードが正しくありません。",
+    	            description = "認証失敗",
     	            content = @Content(
     	                mediaType = "application/json",
     	                examples = @ExampleObject(value = "{\n  \"message\": \"認証に失敗しました。ユーザー名またはパスワードが正しくありません。\",\n  \"error\": 401\n}")
@@ -92,6 +104,8 @@ public class LoginController {
     	        )
     	    }
     	)
+
+
 
     /**
      * ログインリクエストを処理し、JWT トークンを返却します。

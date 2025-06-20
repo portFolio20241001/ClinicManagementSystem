@@ -70,11 +70,15 @@ public class PatientController {
     @Operation(
     	    summary     = "トークンから患者情報を取得 (by Patient)",
     	    description = "JWT に含まれる <code>username</code> をキーに患者情報を返します。",
-    	    parameters  = @Parameter(
-    	        name        = "token",
-    	        description = "患者 JWT",
-    	        example     = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig"
-    	    )
+    	    parameters  = {
+    	        @Parameter(
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+    	            required = true,
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig"
+    	        )
+    	    }
     	)
     	@ApiResponses({
     	    @ApiResponse(
@@ -101,7 +105,7 @@ public class PatientController {
     	                          }
     	                        }"""
     	            ),
-    	            schema = @Schema(example = "{\"patient\":{...}}")   // Schema 表示が崩れないよう簡易指定
+    	            schema = @Schema(example = "{\"patient\":{...}}")
     	        )
     	    ),
     	    @ApiResponse(
@@ -123,6 +127,7 @@ public class PatientController {
     	        )
     	    )
     	})
+
     
     /*
      * JWT トークンから患者の基本情報を取得する。
@@ -157,7 +162,7 @@ public class PatientController {
      * @param token  患者トークン
      * @return <b>patient</b> キーで {@link Patient} を返却
      */
-    @GetMapping("/patient/details")
+    @GetMapping("/details")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Map<String, Object>> getPatientDetails(
             @AuthenticationPrincipal D2_UserDetailsImpl userDetails) {
@@ -330,14 +335,13 @@ public class PatientController {
     	            in          = ParameterIn.PATH,
     	            schema      = @Schema(type = "integer", format = "int64")
     	        ),
-    	        @Parameter(
-    	            name        = "token",
-    	            description = "患者の JWT",
-    	            example     = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig",
-    	            required    = true,
-    	            in          = ParameterIn.PATH,
-    	            schema      = @Schema(type = "string")
-    	        )
+	            @Parameter(
+    	                name = "Authorization",
+    	                in = ParameterIn.HEADER,
+    	    	        required = true,
+    	                description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+     	                example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
+        	            )
     	    },
     	    responses = {
     	        @ApiResponse(
@@ -464,14 +468,13 @@ public class PatientController {
     	            in          = ParameterIn.PATH,
     	            schema      = @Schema(type = "string")
     	        ),
-    	        @Parameter(
-    	            name        = "token",
-    	            description = "患者 JWT",
-    	            example     = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig",
-    	            required    = true,
-    	            in          = ParameterIn.PATH,
-    	            schema      = @Schema(type = "string")
-    	        )
+	            @Parameter(
+    	                name = "Authorization",
+    	                in = ParameterIn.HEADER,
+    	    	        required = true,
+    	                description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+     	                example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
+        	            )
     	    },
     	    responses = {
     	        @ApiResponse(

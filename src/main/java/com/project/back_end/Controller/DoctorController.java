@@ -29,6 +29,7 @@ import com.project.back_end.Service.DoctorService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -69,7 +70,7 @@ public class DoctorController {
      * ===================================================================*/
     // SwaggerUI表示
     @Operation(
-            summary = "医師の空き時間を取得 (by Patient)",
+            summary = "医師の空き時間を取得 (by Patient or Doctor)",
             description = "指定した <b>doctorId</b> と <b>date</b> について、未予約の時間帯リストを返します。",
             parameters = {
                 @Parameter(
@@ -82,11 +83,13 @@ public class DoctorController {
                     description = "対象日 (YYYY-MM-DD)",
                     example = "2025-09-11"
                 ),
-                @Parameter(
-                    name = "token",
-                    description = "JWT トークン（ROLE_DOCTOR）",
-                    example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkb2N0b3JVc2VyMSIsImlhdCI6MTY5NjM0NTYwMCwiZXhwIjoyMDExMjQ1NjAwfQ.dummySignature"
-                )
+    	        @Parameter(
+        	            name = "Authorization",
+        	            in = ParameterIn.HEADER,
+        	            description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+        	            required = true,
+        	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig"
+        	        )
             },
             responses = {
                 @ApiResponse(
@@ -104,19 +107,13 @@ public class DoctorController {
                     )
                 ),
                 @ApiResponse(
-        	            responseCode = "401",
-        	            description = "トークン無効",
-        	            content = @Content(
-        	                mediaType = "application/json",
-        	                examples = @ExampleObject(
-        	                    name = "無効トークン",
-        	                    value = """
-        	                        {
-        	                          "error": "トークンが無効です"
-        	                        }"""
-        	                )
-        	            )
-        	        )
+                        responseCode = "401",
+                        description = "認証失敗。JWTトークンが無効、または期限切れです。",
+                        content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = "{ \"error\": 401, \"message\": \"認証に失敗しました。トークンが無効または期限切れです。\" }")
+                        )
+                    )
             }
         )
     /**
@@ -168,40 +165,66 @@ public class DoctorController {
      * 2) すべての医師を取得
      * ===================================================================*/
     @Operation(
-        summary = "全ての医師を取得",
-        description = "登録されている医師レコードをすべて返します。",
-        responses = @ApiResponse(
-            responseCode = "200",
-            content = @Content(
-                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                examples = @ExampleObject(value = """
-                    {
-                      "doctors": [
-                        {
-                          "id": 2,
-                          "specialty": "心臓内科",
-                          "phone": "080-1111-0002",
-                          "clinicLocation": {
-                            "id": 1,
-                            "name": "中央クリニック"
-                          }
-                        },
-                        {
-                          "id": 3,
-                          "specialty": "神経内科",
-                          "phone": "080-1111-0003",
-                          "clinicLocation": {
-                            "id": 1,
-                            "name": "中央クリニック"
-                          }
-                        }
-                      ]
-                    }""")
-            )
-        )
-    )
+    	    summary = "全ての医師を取得( by Patient )",
+    	    description = "登録されている医師レコードをすべて返します。",
+    	    parameters = {
+    	            @Parameter(
+    	                name = "Authorization",
+    	                in = ParameterIn.HEADER,
+    	    	        required = true,
+    	                description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+     	                example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
+        	            )
+        	        },
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description = "医師情報の取得成功",
+    	            content = @Content(
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+    	                examples = @ExampleObject(value = """
+    	                    {
+    	                      "doctors": [
+    	                        {
+    	                          "id": 2,
+    	                          "specialty": "心臓内科",
+    	                          "phone": "080-1111-0002",
+    	                          "clinicLocation": {
+    	                            "id": 1,
+    	                            "name": "中央クリニック"
+    	                          }
+    	                        },
+    	                        {
+    	                          "id": 3,
+    	                          "specialty": "神経内科",
+    	                          "phone": "080-1111-0003",
+    	                          "clinicLocation": {
+    	                            "id": 1,
+    	                            "name": "中央クリニック"
+    	                          }
+    	                        }
+    	                      ]
+    	                    }""")
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description = "認証失敗。JWTトークンが無効、または期限切れです。",
+    	            content = @Content(
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+    	                examples = @ExampleObject(value = """
+    	                    {
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                    }""")
+    	            )
+    	        )
+    	    }
+    	)
+
 
     @GetMapping
+    @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Map<String, Object>> getDoctors() {
     	
     	log.info("★ GET /doctor  全医師取得リクエスト受信");
@@ -216,12 +239,24 @@ public class DoctorController {
      * ===================================================================*/
     @Operation(
     	    summary = "医師登録（by Admin）",
-    	    description = "Admin が新しい医師を登録します。",
+    	    description = "管理者（Admin）が新しい医師を登録します。JWTトークン認証が必要です。",
+    	    parameters = {
+    	        @Parameter(
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSignature"
+    	        )
+    	    },
     	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
     	        required = true,
+    	        description = "登録する医師情報（User、ClinicLocation、availableTimes 含む）",
     	        content = @Content(
     	            schema = @Schema(implementation = Doctor.class),
-    	            examples = @ExampleObject(name = "doctorRequest", value = """
+    	            examples = @ExampleObject(
+    	                name = "doctorRequest",
+    	                value = """
     	                {
     	                  "specialty": "小児科",
     	                  "phone": "090-1234-5678",
@@ -236,59 +271,57 @@ public class DoctorController {
     	                    "role": "ROLE_DOCTOR",
     	                    "fullName": "佐藤 太郎"
     	                  }
-    	                }""")
+    	                }"""
+    	            )
     	        )
-    	    ),
-    	    parameters = @Parameter(
-    	        name = "token",
-    	        description = "Admin の JWT トークン",
-    	        example = "eyJhbGciOiJIUzI1NiJ9.adminTokenSignature"
     	    ),
     	    responses = {
     	        @ApiResponse(
     	            responseCode = "201",
     	            description = "登録成功",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "登録成功",
     	                    value = """
-    	                        {
-    	                          "message": "医師を登録しました。"
-    	                        }"""
+    	                    {
+    	                      "message": "医師を登録しました。"
+    	                    }"""
     	                )
     	            )
     	        ),
     	        @ApiResponse(
     	            responseCode = "409",
-    	            description = "重複ユーザーあり",
+    	            description = "重複ユーザーあり（username が既に存在）",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "重複ユーザー",
     	                    value = """
-    	                        {
-    	                          "error": "同じユーザー名の医師が既に存在します。"
-    	                        }"""
+    	                    {
+    	                      "error": "同じユーザー名の医師が既に存在します。"
+    	                    }"""
     	                )
     	            )
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "トークン無効",
+    	            description = "認証失敗。JWTトークンが無効、または期限切れです。",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
-    	                    name = "無効トークン",
+    	                    name = "トークンエラー",
     	                    value = """
-    	                        {
-    	                          "error": "トークンが無効です"
-    	                        }"""
+    	                    {
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                    }"""
     	                )
     	            )
     	        )
     	    }
     	)
+
 
 //    @PostMapping("/{token}")　// SpringSecurity対応により廃止
     @PostMapping	  									// SpringSecurity対応により追加
@@ -410,19 +443,21 @@ public class DoctorController {
      * 5) 医師情報更新（Adminロールで更新）
      * ===================================================================*/
     @Operation(
-    	    summary = "医師情報更新（Admin）",
-    	    description = "Admin が医師情報（電話番号・専門分野・所属クリニックなど）を更新します。",
+    	    summary = "医師情報更新（by Admin）",
+    	    description = "管理者（Admin）が医師情報（電話番号・専門分野・所属クリニックなど）を更新します。JWT 認証が必要です。",
     	    parameters = {
     	        @Parameter(
-    	            name = "token",
-    	            description = "Admin の JWT",
-    	            example = "eyJhbGciOiJIUzI1NiJ9.adminTokenSig"
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSig"
     	        )
     	    },
     	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
     	        required = true,
     	        content = @Content(
-    	            mediaType = "application/json",
+    	            mediaType = MediaType.APPLICATION_JSON_VALUE,
     	            schema = @Schema(implementation = Doctor.class),
     	            examples = @ExampleObject(
     	                name = "更新例",
@@ -444,8 +479,7 @@ public class DoctorController {
     	                    "role": "ROLE_DOCTOR",
     	                    "fullName": "佐藤 花子"
     	                  }
-    	                }
-    	                """
+    	                }"""
     	            )
     	        )
     	    ),
@@ -454,7 +488,7 @@ public class DoctorController {
     	            responseCode = "200",
     	            description = "更新成功",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "成功レスポンス",
     	                    value = "{ \"message\": \"医師情報を更新しました。\" }"
@@ -465,7 +499,7 @@ public class DoctorController {
     	            responseCode = "404",
     	            description = "該当 ID が存在しない",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "存在しないID",
     	                    value = "{ \"error\": \"指定 ID の医師は存在しません。\" }"
@@ -476,15 +510,31 @@ public class DoctorController {
     	            responseCode = "500",
     	            description = "更新リクエストの異常（ID未指定など）",
     	            content = @Content(
-    	                mediaType = "application/json",
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "ID未指定エラー",
     	                    value = "{ \"error\": \"Doctor IDを更新するならIDがNULLはダメです。\" }"
     	                )
     	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description = "認証失敗。JWTトークンが無効または期限切れです。",
+    	            content = @Content(
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+    	                examples = @ExampleObject(
+    	                    name = "認証エラー",
+    	                    value = """
+    	                    {
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                    }"""
+    	                )
+    	            )
     	        )
     	    }
     	)
+
 
 //    @PutMapping("/{token}")	// SpringSecurity対応により廃止
     @PutMapping											// SpringSecurity対応により追加
@@ -515,17 +565,21 @@ public class DoctorController {
      * ===================================================================*/
     @Operation(
     	    summary = "医師削除（by Admin）",
-    	    description = "Admin が医師レコードを削除します。",
+    	    description = "Admin が指定 ID の医師（および関連する予約履歴など）を削除します。",
     	    parameters = {
     	        @Parameter(
     	            name = "doctorId",
-    	            description = "削除対象の医師ID",
+    	            in = ParameterIn.PATH,
+    	            required = true,
+    	            description = "削除対象の医師 ID",
     	            example = "11"
     	        ),
     	        @Parameter(
-    	            name = "token",
-    	            description = "Admin の JWT トークン",
-    	            example = "eyJhbGciOiJIUzI1NiJ9.adminTokenSig"
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSig"
     	        )
     	    },
     	    responses = {
@@ -537,9 +591,9 @@ public class DoctorController {
     	                examples = @ExampleObject(
     	                    name = "削除成功",
     	                    value = """
-    	                        {
-    	                          "message": "医師(および紐づく予定履歴)を削除しました。"
-    	                        }"""
+    	                    {
+    	                      "message": "医師(および紐づく予定履歴)を削除しました。"
+    	                    }"""
     	                )
     	            )
     	        ),
@@ -551,28 +605,30 @@ public class DoctorController {
     	                examples = @ExampleObject(
     	                    name = "医師IDなし",
     	                    value = """
-    	                        {
-    	                          "error": "指定 ID の医師は存在しません。"
-    	                        }"""
+    	                    {
+    	                      "error": "指定 ID の医師は存在しません。"
+    	                    }"""
     	                )
     	            )
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "認証失敗（トークン不正）",
+    	            description = "認証失敗。JWTトークンが無効または期限切れです。",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
-    	                    name = "不正トークン",
+    	                    name = "認証失敗",
     	                    value = """
-    	                        {
-    	                          "error": "トークンが無効です"
-    	                        }"""
+    	                    {
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                    }"""
     	                )
     	            )
     	        )
     	    }
     	)
+
 
 //    @DeleteMapping("/{doctorId}/{token}")	// SpringSecurity対応により廃止
     @DeleteMapping("/{doctorId}")				//	 SpringSecurity対応により追加
@@ -599,7 +655,7 @@ public class DoctorController {
      * 7) 医師フィルタ（名前・専門・AM/PM）
      * ===================================================================*/
     @Operation(
-        summary = "医師フィルタ",
+        summary = "医師フィルタ( by Patient )",
         description = """
             3 つのパラメータを組み合わせて医師を検索します。  
             <ul>
@@ -665,6 +721,7 @@ public class DoctorController {
         }
     )
     @GetMapping("/filter/{name}/{specialty}/{period}")
+    @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Map<String, Object>> filterDoctors(
             @PathVariable String name,
             @PathVariable String specialty,

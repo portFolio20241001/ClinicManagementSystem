@@ -25,6 +25,7 @@ import com.project.back_end.Service.PrescriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -91,9 +92,11 @@ public class PrescriptionController {
     	        )
     	    ),
     	    parameters = @Parameter(
-    	        name = "token",
-    	        description = "Doctor ロールの JWT トークン",
-    	        example = "eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
+    	        name = "Authorization",
+    	        in = ParameterIn.HEADER,
+    	        required = true,
+    	        description = "Bearerトークン（ROLE_DOCTOR）形式：Bearer eyJhbGciOi...",
+    	        example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
     	    ),
     	    responses = {
     	        @ApiResponse(
@@ -126,21 +129,22 @@ public class PrescriptionController {
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "JWT トークンの検証失敗時",
+    	            description = "認証失敗。JWTトークンが無効、または期限切れです。",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "認証エラー",
     	                    value = """
     	                    {
-    	                      "error": "トークンが無効です"
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
     	                    }"""
     	                )
     	            )
     	        )
-    	        // 500 は明示的に指定しない（ログだけ WARN 出力で内部で握りつぶす設計のため）
     	    }
     	)
+
 
     /**
      * <p>指定された予約に対し、新しい処方箋を登録する。</p>
@@ -195,8 +199,18 @@ public class PrescriptionController {
     	    summary = "処方箋を取得する (by Doctor)",
     	    description = "指定した予約 ID に紐づく処方箋情報を返します。",
     	    parameters = {
-    	        @Parameter(name = "appointmentId", description = "予約 ID", example = "1"),
-    	        @Parameter(name = "token", description = "Doctor JWT", example = "eyJhbGciOiJIUzI1NiJ9.doctorTokenSig")
+    	        @Parameter(
+    	            name = "appointmentId",
+    	            description = "予約 ID",
+    	            example = "1"
+    	        ),
+    	        @Parameter(
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "Bearer トークン（ROLE_DOCTOR）形式：Bearer eyJhbGciOi...",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig"
+    	        )
     	    },
     	    responses = {
     	        @ApiResponse(
@@ -222,21 +236,22 @@ public class PrescriptionController {
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "トークンが無効な場合",
+    	            description = "認証失敗。JWTトークンが無効または期限切れです。",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "認証エラー",
     	                    value = """
     	                    {
-    	                      "error": "トークンが無効です"
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
     	                    }"""
     	                )
     	            )
     	        ),
     	        @ApiResponse(
     	            responseCode = "404",
-    	            description = "処方箋が存在しない場合",
+    	            description = "指定の予約に対する処方箋が存在しない場合",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
@@ -250,7 +265,7 @@ public class PrescriptionController {
     	        ),
     	        @ApiResponse(
     	            responseCode = "500",
-    	            description = "内部エラーが発生した場合",
+    	            description = "内部サーバーエラー",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
@@ -264,6 +279,7 @@ public class PrescriptionController {
     	        )
     	    }
     	)
+
 
 
     /**

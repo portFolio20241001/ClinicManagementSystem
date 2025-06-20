@@ -26,6 +26,7 @@ import com.project.back_end.Service.CommonService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -73,11 +74,17 @@ public class AppointmentController {
     
     @Operation(
     	    summary = "指定日付の医師単位での予約一覧取得（by Doctor）",
-    	    description = "指定した医師 ID と日付に基づいて、その日に予約されているすべての予約情報を返します。",
+    	    description = "指定した医師 ID と日付に基づいて、その日に予約されているすべての予約情報を返します。(キャンセル分は除く)",
     	    parameters = {
     	        @Parameter(name = "doctorId", description = "医師の ID", example = "2"),
     	        @Parameter(name = "date", description = "予約日 (yyyy-MM-dd)", example = "2025-09-11"),
-    	        @Parameter(name = "token", description = "JWT トークン（ROLE_DOCTOR）", example = "eyJhbGciOiJIUzI1NiJ9.tokenSignature")
+    	        @Parameter(
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "Bearer トークン（例: Bearer eyJhbGciOi...）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.tokenSignature"
+    	        )
     	    },
     	    responses = {
     	        @ApiResponse(
@@ -116,14 +123,15 @@ public class AppointmentController {
     	        ),
     	        @ApiResponse(
     	            responseCode = "401",
-    	            description = "認証トークンが無効",
+    	            description = "認証失敗。JWTトークンが無効、または期限切れです。",
     	            content = @Content(
     	                mediaType = MediaType.APPLICATION_JSON_VALUE,
     	                examples = @ExampleObject(
     	                    name = "トークンエラー例",
     	                    value = """
     	                    {
-    	                      "error": "トークンが無効です"
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
     	                    }
     	                    """
     	                )
@@ -131,6 +139,7 @@ public class AppointmentController {
     	        )
     	    }
     	)
+
 
     /**
      * 指定日・患者名で医師の予約を検索して返却する。  
@@ -172,58 +181,70 @@ public class AppointmentController {
      * ① 予約一覧取得（医師）
      * ===================================================================*/
     @Operation(
-        summary     = "医師の予約一覧取得 (by Doctor)",
-        description = "指定日と患者名（部分一致可）で、医師が持つ予約を取得します。",
-        parameters  = {
-            @Parameter(name = "doctorId", description = "医師 ID", example = "2"),
-            @Parameter(name = "date",     description = "検索対象日 (yyyy-MM-dd)", example = "2025-09-11"),
-            @Parameter(name = "patientName", description = "患者名（部分一致）例: \"松本\"(null指定で全件指定)", example = "松本"),
-            @Parameter(name = "token",    description = "Doctor ログイントークン", example = "eyJhbGciOiJIUzI1NiJ9.doctorTokenSig")
-        },
-        responses = {
-            @ApiResponse(
-                responseCode = "200",
-                description  = "検索成功",
-                content      = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    examples  = @ExampleObject(
-                        name    = "Success",
-                        summary = "検索結果例",
-                        value   = """
-                        {
-                          "appointments": [
-                            {
-                              "id": 1,
-                              "doctor": { "id": 2 },
-                              "patient": { "id": 12 },
-                              "appointmentTime": "2025-09-11T09:00:00",
-                              "status": 0
-                            },
-                            {
-                              "id": 4,
-                              "doctor": { "id": 2 },
-                              "patient": { "id": 15 },
-                              "appointmentTime": "2025-09-11T14:00:00",
-                              "status": 1
-                            }
-                          ]
-                        }
-                        """
-                    )
-                )
-            ),
-            @ApiResponse(
-                responseCode = "401",
-                description  = "トークン無効／期限切れ",
-                content      = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    examples  = @ExampleObject(value = """
-                    { "error": "トークンが無効です。" }
-                    """)
-                )
-            )
-        }
-    )
+    	    summary     = "医師の予約一覧取得 (by Doctor)",
+    	    description = "指定日と患者名（部分一致可）で、医師が持つ予約を取得します。リクエストヘッダーにJWTトークンが必要です。",
+    	    parameters  = {
+    	        @Parameter(name = "doctorId", description = "医師 ID", example = "2"),
+    	        @Parameter(name = "date",     description = "検索対象日 (yyyy-MM-dd)", example = "2025-09-11"),
+    	        @Parameter(name = "patientName", description = "患者名（部分一致）例: \"松本\"(null指定で全件指定)", example = "松本"),
+    	        @Parameter(
+    	            name = "Authorization",
+    	            description = "JWT トークン（Bearer プレフィックス付き）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig",
+    	            in = ParameterIn.HEADER,
+    	            required = true
+    	        )
+    	    },
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description  = "検索成功",
+    	            content      = @Content(
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+    	                examples  = @ExampleObject(
+    	                    name    = "Success",
+    	                    summary = "検索結果例",
+    	                    value   = """
+    	                    {
+    	                      "appointments": [
+    	                        {
+    	                          "id": 1,
+    	                          "doctor": { "id": 2 },
+    	                          "patient": { "id": 12 },
+    	                          "appointmentTime": "2025-09-11T09:00:00",
+    	                          "status": 0
+    	                        },
+    	                        {
+    	                          "id": 4,
+    	                          "doctor": { "id": 2 },
+    	                          "patient": { "id": 15 },
+    	                          "appointmentTime": "2025-09-11T14:00:00",
+    	                          "status": 1
+    	                        }
+    	                      ]
+    	                    }
+    	                    """
+    	                )
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description  = "認証失敗。JWTトークンが無効または期限切れです。",
+    	            content      = @Content(
+    	                mediaType = MediaType.APPLICATION_JSON_VALUE,
+    	                examples = @ExampleObject(
+    	                    value = """
+    	                    {
+    	                      "error": 401,
+    	                      "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                    }
+    	                    """
+    	                )
+    	            )
+    	        )
+    	    }
+    	)
+
     /**
      * 指定日・患者名で医師の予約を検索して返却する。  
      * <p>トークンは <b>doctor</b> ロールとして検証される。</p>
@@ -274,11 +295,13 @@ public class AppointmentController {
      * ===================================================================*/
     @Operation(
     	    summary     = "新規予約作成＋支払い情報（by Patient）",
-    	    description = "患者が医師の空き時間に予約を入れ、必要であれば支払い情報も同時に登録します。",
+    	    description = "患者が医師の空き時間に予約を入れ、必要であれば支払い情報も同時に登録します。JWTトークンはAuthorizationヘッダーに設定してください。",
     	    parameters  = @Parameter(
-    	        name        = "token",
-    	        description = "Patient ログイントークン",
-    	        example     = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig"
+    	        name        = "Authorization",
+    	        description = "JWT トークン（Bearer プレフィックス付き）",
+    	        example     = "Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig",
+    	        in          = ParameterIn.HEADER,
+    	        required    = true
     	    ),
     	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
     	        required    = true,
@@ -315,25 +338,38 @@ public class AppointmentController {
     	            )
     	        ),
     	        @ApiResponse(
-    	            responseCode = "400",
-    	            description  = "バリデーションエラー / 医師不在・重複予約など",
-    	            content      = @Content(
-    	                examples = @ExampleObject(value = """
-    	                { "message": "指定時間はすでに予約済み、または医師が不在です。" }
-    	                """)
-    	            )
-    	        ),
+    	                responseCode = "400",
+    	                description  = "バリデーションエラー / 医師不在・重複予約など",
+    	                content      = @Content(
+    	                    mediaType = "application/json",
+    	                    examples = {
+    	                        @ExampleObject(
+    	                            name = "医師IDが存在しない",
+    	                            value = """
+    	                            { "message": "指定した医師が存在しません。" }
+    	                            """
+    	                        ),
+    	                        @ExampleObject(
+    	                            name = "空き時間なし",
+    	                            value = """
+    	                            { "message": "指定時間に医師の空きがありません。" }
+    	                            """
+    	                        )
+    	                    }
+    	                )
+    	            ),
     	        @ApiResponse(
-    	            responseCode = "401",
-    	            description  = "認証失敗（無効なトークン）",
-    	            content      = @Content(
-    	                examples = @ExampleObject(value = """
-    	                { "error": "トークンが無効です。" }
-    	                """)
-    	            )
-    	        )
+        	            responseCode = "401",
+        	            description  = "トークン検証失敗",
+        	            content      = @Content(
+        	                examples = @ExampleObject(
+        	                    value = "{\"error\":\"トークンが無効または期限切れです。\"}"
+        	                )
+        	            )
+        	        )
     	    }
     	)
+
     /**
      * 新規予約を作成する。
      *
@@ -389,46 +425,92 @@ public class AppointmentController {
      * ③ 予約更新（患者）
      * ===================================================================*/
     @Operation(
-        summary     = "予約時間の更新 (by Patient)",
-        description = "患者自身の既存予約を変更します。",
-        parameters  = @Parameter(
-            name        = "token",
-            description = "Patient ログイントークン",
-            example     = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig"
-        ),
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            required = true,
-            description = "更新内容（ID 必須）",
-            content = @Content(
-                schema   = @Schema(implementation = Appointment.class),
-                examples = @ExampleObject(
-                    name  = "更新例",
-	                value  = """
-	                {
-	                  "id": 58,
-	                  "doctor":   { "id": 2 },
-	                  "patient":  { "id": 12 },
-	                  "appointmentTime": "2025-09-18T11:00:00",
-	                  "status": 0,
-	                  "payment": {
-	                    "paymentMethod": "credit",
-	                    "paymentStatus": "Pending"
-	                  }
-	                }
-	                """
-                )
-            )
-        ),
-        responses = @ApiResponse(
-            responseCode = "200",
-            description  = "更新成功",
-            content      = @Content(
-                examples = @ExampleObject(value = """
-                { "message": "予約が正常に更新されました。" }
-                """)
-            )
-        )
-    )
+    	    summary     = "予約時間の更新 (by Patient)",
+    	    description = "患者自身の既存予約を変更します。JWT は Authorization ヘッダーに含めてください。",
+    	    parameters  = @Parameter(
+    	        name        = "Authorization",
+    	        description = "JWT トークン（Bearer プレフィックス付き）",
+    	        example     = "Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig",
+    	        in          = ParameterIn.HEADER,
+    	        required    = true
+    	    ),
+    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	        required = true,
+    	        description = "更新内容（ID 必須）",
+    	        content = @Content(
+    	            schema   = @Schema(implementation = Appointment.class),
+    	            examples = @ExampleObject(
+    	                name  = "更新例",
+    	                value = """
+    	                {
+    	                  "id": 58,
+    	                  "doctor":   { "id": 2 },
+    	                  "patient":  { "id": 12 },
+    	                  "appointmentTime": "2025-09-18T11:00:00",
+    	                  "status": 0,
+    	                  "payment": {
+    	                    "paymentMethod": "credit",
+    	                    "paymentStatus": "Pending"
+    	                  }
+    	                }
+    	                """
+    	            )
+    	        )
+    	    ),
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description  = "更新成功",
+    	            content      = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = """
+    	                { "message": "予約が正常に更新されました。" }
+    	                """)
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "400",
+    	            description  = "バリデーションエラー（ID未指定・医師不在・重複など）",
+    	            content      = @Content(
+    	                mediaType = "application/json",
+    	                examples = {
+    	                    @ExampleObject(
+    	                        name = "ID未指定",
+    	                        value = """
+    	                        { "error": "予約更新にはIDの指定が必要です。" }
+    	                        """
+    	                    ),
+    	                    @ExampleObject(
+    	                        name = "医師ID不正",
+    	                        value = """
+    	                        { "message": "指定した医師が存在しません。" }
+    	                        """
+    	                    ),
+    	                    @ExampleObject(
+    	                        name = "予約時間に空きなし",
+    	                        value = """
+    	                        { "message": "指定時間に医師の空きがありません。" }
+    	                        """
+    	                    )
+    	                }
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description  = "認証失敗（JWT が無効または期限切れ）",
+    	            content      = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = """
+    	                {
+    	                  "error": 401,
+    	                  "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                }
+    	                """)
+    	            )
+    	        )
+    	    }
+    	)
+
 
     /**
      * 既存予約を更新する。
@@ -465,33 +547,50 @@ public class AppointmentController {
      * ④ 予約キャンセル（患者）
      * ===================================================================*/
     @Operation(
-        summary     = "予約キャンセル (by Patient)",
-        description = "患者が自身の予約をキャンセルします。",
-        parameters  = {
-            @Parameter(name = "id",    description = "キャンセルする予約 ID", example = "1"),
-            @Parameter(name = "token", description = "Patient ログイントークン", example = "eyJhbGciOiJIUzI1NiJ9.patientTokenSig")
-        },
-        responses   = {
-            @ApiResponse(
-                responseCode = "200",
-                description  = "キャンセル成功",
-                content      = @Content(
-                    examples = @ExampleObject(value = """
-                    { "message": "予約がキャンセルされました。" }
-                    """)
-                )
-            ),
-            @ApiResponse(
-                responseCode = "404",
-                description  = "予約が存在しない",
-                content      = @Content(
-                    examples = @ExampleObject(value = """
-                    { "error": "予約が見つかりません。" }
-                    """)
-                )
-            )
-        }
-    )
+    	    summary     = "予約キャンセル (by Patient)",
+    	    description = "患者が自身の予約をキャンセルします。(appointmentテーブルの論理削除)",
+    	    parameters  = {
+    	        @Parameter(name = "id", description = "キャンセルする予約 ID", example = "1"),
+    	        @Parameter(name = "Authorization", in = ParameterIn.HEADER, required = true, 
+    	                   description = "Bearerトークン（例: Bearer eyJhbGciOi...）", example = "Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig")
+    	    },
+    	    responses   = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description  = "キャンセル成功",
+    	            content      = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = """
+    	                { "message": "予約がキャンセルされました。" }
+    	                """)
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "404",
+    	            description  = "予約が存在しない",
+    	            content      = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = """
+    	                { "error": "予約が見つかりません。" }
+    	                """)
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "401",
+    	            description  = "認証失敗。JWTトークンが無効、または期限切れです。",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(value = """
+    	                {
+    	                  "error": 401,
+    	                  "message": "認証に失敗しました。トークンが無効または期限切れです。"
+    	                }
+    	                """)
+    	            )
+    	        )
+    	    }
+    	)
+
 
     /**
      * 予約をキャンセルする。
