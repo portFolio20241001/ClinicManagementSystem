@@ -207,3 +207,88 @@ MongoDB は、柔軟なスキーマ設計が求められるデータを格納す
     "status": "Scheduled"            //　※ logs.details.status は `appointments.status` と同じ ENUM('Scheduled', 'Completed', 'Cancelled') を使用。
   }
 }
+
+
+
+```
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    users ||--|| admins              : has
+    users ||--|| doctors             : has
+    users ||--|| patients            : has
+
+    clinic_locations ||--o{ doctors  : hosts
+    doctors ||--o{ doctor_available_times : has
+    doctors ||--o{ appointments      : "doctor_id"
+    patients ||--o{ appointments     : "patient_id"
+    appointments ||--|| payments     : has
+
+    users {
+        bigint id
+        string username
+        string password_hash
+        string role
+        string full_name
+        datetime created_at
+    }
+
+    admins {
+        bigint id
+        datetime created_at
+    }
+
+    doctors {
+        bigint id
+        bigint clinic_location_id
+        string phone
+        string specialty
+        datetime created_at
+    }
+
+    patients {
+        bigint id
+        string phone
+        string address
+        date date_of_birth
+        string gender
+        datetime created_at
+    }
+
+    clinic_locations {
+        bigint id
+        string name
+        string address
+        string phone
+        datetime created_at
+    }
+
+    doctor_available_times {
+        bigint doctor_id
+        string available_time
+    }
+
+    appointments {
+        bigint id
+        bigint doctor_id
+        bigint patient_id
+        datetime appointment_time
+        string status
+        datetime created_at
+    }
+
+    payments {
+        bigint id
+        bigint appointment_id
+        decimal amount
+        string payment_method
+        string payment_status
+        datetime paid_at
+        datetime created_at
+    }
+
+
+
+```
