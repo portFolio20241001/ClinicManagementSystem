@@ -47,16 +47,21 @@ The backend provides:
 ```mermaid
 sequenceDiagram
     participant C as Client (SPA)
-    participant S as Spring Boot API
+    participant S as Spring Boot API
     participant DB as MySQL
-    C->>S: POST /api/auth/login {user,pass}
+
+    C->>S: POST /api/auth/login {user, pass}
     S->>DB: verify credentials
     DB-->>S: OK
-    S-->>C: 200 {token,role}
-    C->>S: Any protected endpoint
-Authorization: Bearer <token>
-    S->>S: JwtAuthFilter → validates ← secretKey
-    S-->>C: 2xx / 4xx JSON
+    S-->>C: 200 {token, role}
+
+    C->>S: GET /doctor/available-times
+    Note right of C: Authorization: Bearer <token>
+
+    
+    S->>S: JwtAuthFilter → validates token
+    S-->>C: 200 / 401 JSON
+
 ```
 * **Expiration:** 24 h, renewable  
 * **Claims:** `sub` (username), `role`, optional `userId` (future)  
