@@ -62,6 +62,16 @@ public class D2_UserDetailsImpl implements UserDetails {
     public String getUsername() {
         return user.getUsername();
     }
+    
+    /**
+     * エンティティの ID を直接取得します。
+     * 
+     * @return ユーザーID
+     */
+    public Long getUserId() {
+        return user.getId();
+    }
+
 
     /** アカウントの有効期限チェック（常に true を返す） */
     @Override public boolean isAccountNonExpired() { return true; }
@@ -83,4 +93,6 @@ public class D2_UserDetailsImpl implements UserDetails {
     public User getUser() {
         return user;
     }
+    
+    
 }

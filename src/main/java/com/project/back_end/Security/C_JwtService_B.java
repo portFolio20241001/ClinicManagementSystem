@@ -14,6 +14,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * JWT の発行・検証・解析を担当するサービスクラス。
@@ -136,4 +137,22 @@ public class C_JwtService_B {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    
+
+
+    /**
+     * リクエストから Authorization ヘッダーを通じて username を抽出します。
+     *
+     * @param request HttpServletRequest（ヘッダーに "Authorization: Bearer xxx" を含む）
+     * @return userId（Long）
+     */
+    public String extractUsernameFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Authorizationヘッダーが無効です。");
+        }
+        String token = authHeader.substring(7);
+        return extractUsername(token);
+    }
+    
 }

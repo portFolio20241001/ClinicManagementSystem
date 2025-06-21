@@ -585,5 +585,153 @@ public class DoctorService {
         }
     	
     }
+    
+    
+    
+    
+    
+    
+    /* =====================================================================
+     * 
+     * 医師の利用可能時間を取得・追加・更新・削除　Service
+     * 
+     * ===================================================================*/
+
+
+
+    /**
+     * 指定したユーザー名に対応する医師の診療可能時間を全件取得します。
+     *
+     * @param username ユーザー名（JWTトークンから抽出）
+     * @return 利用可能時間のリスト
+     */
+    public List<String> getAvailableTimes(String username) {
+        System.out.println("www");
+
+        Doctor doctor = doctorRepository.findByUser_Username(username)
+                .orElseThrow(() -> new IllegalArgumentException("該当する医師が見つかりません。"));
+
+        System.out.println("doctor:" + doctor);
+
+        // availableTimes は JOIN FETCH でロードされるため、強制ロードは不要
+        return doctor.getAvailableTimes();
+    }
+
+
+
+        /**
+         * 利用可能時間を追加します。
+         *
+         * @param doctorId 医師ID
+         * @param time     追加する時間（例: "2025-06-30 09:00"）
+         */
+        @Transactional
+        public void addAvailableTime(String username, String time) {
+        	
+        	Doctor doctor = doctorRepository.findByUser_Username(username)
+                    .orElseThrow(() -> new IllegalArgumentException("該当する医師が見つかりません。"));
+
+            System.out.println("doctor:" + doctor);
+            
+            if (doctor.getAvailableTimes().contains(time)) {
+                throw new IllegalArgumentException("指定された時間は既に存在します。");
+            }
+            
+            doctor.getAvailableTimes().add(time);
+            doctorRepository.save(doctor);
+            
+        }
+        
+
+        /**
+         * 既存の時間を新しい時間に更新します。
+         * 既にその時間に予約がある場合は例外をスローします。
+         *
+         * @param doctorId 医師ID
+         * @param oldTime  既存の時間
+         * @param newTime  新しい時間
+         */
+        @Transactional
+        public void updateAvailableTime(String username, String oldTime, String newTime) {
+            
+        	Doctor doctor = doctorRepository.findByUser_Username(username)
+                    .orElseThrow(() -> new IllegalArgumentException("該当する医師が見つかりません。"));
+        	Long doctorId = doctor.getId();
+
+            System.out.println("doctorId:" + doctorId);
+
+            if (!doctor.getAvailableTimes().contains(oldTime)) {
+                throw new IllegalArgumentException("指定された更新元の時間は存在しません。");
+            }
+            
+            // 予約が存在するかチェック
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            LocalDateTime appointmentTime = LocalDateTime.parse(oldTime, formatter);
+            
+            System.out.println("appointmentTime:" + appointmentTime);
+            
+            if (appointmentRepository.existsByDoctorIdAndAppointmentTime(doctorId, appointmentTime)) {
+                throw new IllegalStateException("この時間には既に患者予約があります。変更できません。仕事してください。");
+            }
+
+            // 時間の更新
+            doctor.getAvailableTimes().remove(oldTime);
+            doctor.getAvailableTimes().add(newTime);
+            doctorRepository.save(doctor);
+        }
+
+
+        /**
+         * 指定された時間を削除します。既に予約がある場合は削除できません。
+         *
+         * @param doctorId 医師ID
+         * @param time     削除対象の時間
+         */
+        @Transactional
+        public void deleteAvailableTime(String username, String time) {
+        	
+        	Doctor doctor = doctorRepository.findByUser_Username(username)
+                    .orElseThrow(() -> new IllegalArgumentException("該当する医師が見つかりません。"));
+        	Long doctorId = doctor.getId();
+
+            System.out.println("doctorId:" + doctorId);
+
+            if (!doctor.getAvailableTimes().contains(time)) {
+                throw new IllegalArgumentException("指定された時間は存在しません。");
+            }
+
+            // 時刻をパースして比較用に変換
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            LocalDateTime parsedTime;
+            try {
+                parsedTime = LocalDateTime.parse(time, formatter);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException("時間形式が不正です。正しい形式（例: 2025-06-30 09:00）で指定してください。");
+            }
+
+            if (appointmentRepository.existsByDoctorIdAndAppointmentTime(doctorId, parsedTime)) {
+                throw new IllegalStateException("この時間には既に患者予約があります。削除できません。仕事してください。");
+            }
+
+            doctor.getAvailableTimes().remove(time);
+            doctorRepository.save(doctor);
+            
+        }
+
+
+//        /**
+//         * 医師エンティティの存在確認と取得を行います。
+//         *
+//         * @param doctorId 医師ID
+//         * @return Doctorエンティティ
+//         */
+//        private Doctor getDoctorOrThrow(Long doctorId) {
+//            return doctorRepository.findById(doctorId)
+//                .orElseThrow(() -> new IllegalArgumentException("医師IDが不正です。"));
+//        }
+    
+    
+    
+    
 
 }

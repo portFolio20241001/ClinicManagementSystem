@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 //import com.project.back_end.DTO.Login;			//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Doctor;
+import com.project.back_end.Security.C_JwtService_B;
 //import com.project.back_end.Service.CommonService;	//　SpringSecurity対応により廃止
 import com.project.back_end.Service.DoctorService;
 
@@ -34,6 +35,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +60,8 @@ public class DoctorController {
 
     /** 医師固有ロジックを扱うサービス */
     private final DoctorService doctorService;
+    
+    private final C_JwtService_B jwtService;
 
     /** トークン検証や汎用フィルタを行う共通サービス */
 //    private final CommonService commonService;		//　SpringSecurity対応により廃止
@@ -744,4 +749,384 @@ public class DoctorController {
         
         return ResponseEntity.ok(body);
     }
+    
+    
+    
+    
+    
+    /* =====================================================================
+     * 
+     * 医師の利用可能時間を取得・追加・更新・削除
+     * 
+     * ===================================================================*/
+    
+
+
+    /**
+     * 医師の診療可能時間（availableTimes）を操作するコントローラー。
+     * <p>対象はログイン中のDoctor自身。</p>
+     *
+     * 提供機能:
+     * <ul>
+     *   <li>利用可能時間の一覧取得</li>
+     *   <li>新規追加</li>
+     *   <li>時間の更新（古い時間 → 新しい時間）</li>
+     *   <li>時間の削除</li>
+     * </ul>
+     */
+
+
+    @Operation(
+    	    summary = "利用可能時間一覧取得( by Doctor )",
+    	    description = "ログイン中の医師の利用可能時間を取得します。",
+    	    parameters = {
+    	        @Parameter(
+    	            name = "Authorization",
+    	            description = "Bearerトークン（例: Bearer eyJhbGciOi...）",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    	        )
+    	    }
+    	)
+    	@ApiResponses(value = {
+    	    @ApiResponse(
+    	        responseCode = "200",
+    	        description = "利用可能時間リスト",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(value = "{\n  \"availableTimes\": [\"2025-06-30 09:00\", \"2025-06-30 10:00\"]\n}")
+    	        )
+    	    ),
+    	    @ApiResponse(
+    	        responseCode = "400",
+    	        description = "入力値エラーや認証失敗など",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(value = "{\n  \"error\": \"医師IDが不正です。\"\n}")
+    	        )
+    	    ),
+    	    @ApiResponse(
+    	        responseCode = "500",
+    	        description = "サーバーエラー",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(value = "{\n  \"error\": \"サーバーエラー: 予期しないエラーが発生しました。\"\n}")
+    	        )
+    	    )
+    	})
+    	@GetMapping("/available-times")
+    	@PreAuthorize("hasRole('DOCTOR')")
+    	public ResponseEntity<?> getAvailableTimes(HttpServletRequest request) {
+    	
+    	    try {
+    	    	
+    	    	// JWTからusername抽出
+    	        String username = jwtService.extractUsernameFromRequest(request);
+    	        
+    	        System.out.println("username:"+username);
+    	        
+    	        List<String> times = doctorService.getAvailableTimes(username);
+    	        
+    	        return ResponseEntity.ok(Map.of("availableTimes", times));
+    	        
+    	    } catch (IllegalArgumentException e) {
+    	    	
+    	        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    	        
+    	    } catch (Exception e) {
+    	    	
+    	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    	                .body(Map.of("error", "サーバーエラー: " + e.getMessage()));
+    	        
+    	    }
+    	}
+
+
+    
+    @Operation(
+    	    summary = "利用可能時間を追加（by Doctor）",
+    	    description = "ログイン中の医師に診療可能時間を追加します。",
+    	    parameters = {
+    	  		       @Parameter(
+    	    		      name = "Authorization",
+    	    		      description = "Bearerトークン（例: Bearer eyJhbGciOi...）",
+    	    		      in = ParameterIn.HEADER,
+    	    		      required = true,
+    	    		      example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    	    		   )
+    	    },
+    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	        required = true,
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                name = "Add Time Example",
+    	                value = "{\n  \"time\": \"2025-06-30 09:00\"\n}"
+    	            )
+    	        )
+    	    )
+    	)
+    	@ApiResponses(value = {
+    	    @ApiResponse(
+    	        responseCode = "201",
+    	        description = "利用可能時間を追加しました",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"message\": \"利用可能時間を追加しました。\"\n}"
+    	            )
+    	        )
+    	    ),
+    	    @ApiResponse(
+    	    	    responseCode = "400",
+    	    	    description = "バリデーションエラー（時間が不正・医師が存在しない・すでに存在する時間の追加）",
+    	    	    content = @Content(
+    	    	        mediaType = "application/json",
+    	    	        examples = {
+    	    	            @ExampleObject(
+    	    	                name = "Doctor Not Found",
+    	    	                value = "{\n  \"error\": \"該当する医師が見つかりません。\"\n}"
+    	    	            ),
+    	    	            @ExampleObject(
+    	    	                name = "Time Already Exists",
+    	    	                value = "{\n  \"error\": \"指定された時間は既に存在します。\"\n}"
+    	    	            )
+    	    	        }
+    	    	    )
+    	    	),
+    	    @ApiResponse(
+    	        responseCode = "500",
+    	        description = "サーバーエラー",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"error\": \" 予期しない例外が発生しました\"\n}"
+    	            )
+    	        )
+    	    )
+    	})
+    /**
+     * 新しい診療可能時間を追加します。
+     *
+     * @param body    追加する時間（例: "2025-06-30 09:00"）
+     * @param request JWTからDoctor IDを取得
+     * @return 成功 or エラー
+     */
+    @PostMapping("/available-times")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<?> addAvailableTime(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    	
+        try {
+        	
+	    	// JWTからusername抽出
+	        String username = jwtService.extractUsernameFromRequest(request);
+            
+            doctorService.addAvailableTime(username, body.get("time"));
+            
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "利用可能時間を追加しました。"));
+            
+        } catch (IllegalArgumentException e) {
+        	
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            
+        } catch (Exception e) {
+        	
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "サーバーエラー: " + e.getMessage()));
+            
+        }
+    }
+
+    
+    
+    
+    @Operation(
+    	    summary = "利用可能時間の更新（by Doctor）",
+    	    description = "ログイン中の医師の診療可能時間を更新します。",
+    	    parameters = {
+    	            @Parameter(
+    	   	           name = "Authorization",
+    	   	           description = "Bearerトークン（例: Bearer eyJhbGciOi...）",
+    	   	           in = ParameterIn.HEADER,
+    	               required = true,
+     	               example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+       	            )
+   	        },
+    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	        required = true,
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"oldTime\": \"2025-06-30 09:00\",\n  \"newTime\": \"2025-06-30 10:00\"\n}"
+    	            )
+    	        )
+    	    ),
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description = "利用可能時間を更新しました。",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(
+    	                    value = "{\n  \"message\": \"利用可能時間を更新しました。\"\n}"
+    	                )
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "400",
+    	            description = "バリデーションエラー（更新元が存在しない・予約済みなど）",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(
+    	                    value = "{\n  \"error\": \"指定された更新元の時間は存在しません。\"\n}"
+    	                )
+    	            )
+    	        ),
+    	        @ApiResponse(
+    	            responseCode = "500",
+    	            description = "サーバーエラー",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                examples = @ExampleObject(
+    	                    value = "{\n  \"error\": \"　この時間には既に患者予約があります。変更できません。仕事してください。\"\n}"
+    	                )
+    	            )
+    	        )
+    	    }
+    	)
+    /**
+     * 既存の時間を新しい時間に更新します。
+     *
+     * @param body    oldTime と newTime を含むMap
+     * @param request JWTからDoctor IDを取得
+     * @return 成功 or エラー
+     */
+    @PutMapping("/available-times")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<?> updateAvailableTime(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    	
+        try {
+        	
+	    	// JWTからusername抽出
+	        String username = jwtService.extractUsernameFromRequest(request);
+            
+            doctorService.updateAvailableTime(username, body.get("oldTime"), body.get("newTime"));
+            
+            return ResponseEntity.ok(Map.of("message", "利用可能時間を更新しました。"));
+            
+        } catch (IllegalArgumentException e) {
+        	
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            
+        } catch (Exception e) {
+        	
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "サーバーエラー: " + e.getMessage()));
+            
+        }
+    }
+
+    
+    
+    @Operation(
+    	    summary = "利用可能時間の削除( by Doctor )",
+    	    description = "ログイン中の医師の利用可能時間を削除します。予約が入っている時間は削除できません。",
+    	    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	        required = true,
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"time\": \"2025-06-30 09:00\" \n}"
+    	            )
+    	        )
+    	    ),
+    	    parameters = {
+    	        @Parameter(
+    	            name = "Authorization",
+    	            in = ParameterIn.HEADER,
+    	            required = true,
+    	            description = "JWTトークン（例: Bearer xxx.yyy.zzz）",
+    	            example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    	        )
+    	    }
+    	)
+    	@ApiResponses(value = {
+    	    @ApiResponse(
+    	        responseCode = "200",
+    	        description = "削除成功",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"message\": \"利用可能時間を削除しました。\" \n}"
+    	            )
+    	        )
+    	    ),
+    	    @ApiResponse(
+    	    	    responseCode = "400",
+    	    	    description = "バリデーションエラー（時間が存在しない・形式不正など）",
+    	    	    content = @Content(
+    	    	        mediaType = "application/json",
+    	    	        examples = {
+    	    	            @ExampleObject(
+    	    	                name = "時間が存在しない",
+    	    	                value = "{\n  \"error\": \"指定された時間は存在しません。\" \n}"
+    	    	            ),
+    	    	            @ExampleObject(
+    	    	                name = "時間形式が不正",
+    	    	                value = "{\n  \"error\": \"時間形式が不正です。正しい形式（例: 2025-06-30 09:00）で指定してください。\" \n}"
+    	    	            )
+    	    	        }
+    	    	    )
+    	    	),
+    	    @ApiResponse(
+    	        responseCode = "500",
+    	        description = "サーバーエラー",
+    	        content = @Content(
+    	            mediaType = "application/json",
+    	            examples = @ExampleObject(
+    	                value = "{\n  \"error\": \"この時間には既に患者予約があります。削除できません。仕事してください。\"\n}"
+    	            )
+    	        )
+    	    )
+    	})
+    /**
+     * 指定の利用可能時間を削除します。
+     *
+     * @param body    time（例: "2025-06-30 09:00"）を含むMap
+     * @param request JWTからDoctor IDを取得
+     * @return 成功 or エラー
+     */
+    @DeleteMapping("/available-times")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<?> deleteAvailableTime(@RequestBody Map<String, String> body, HttpServletRequest request) {
+    	
+        try {
+        	
+	    	// JWTからusername抽出
+	        String username = jwtService.extractUsernameFromRequest(request);
+            
+            doctorService.deleteAvailableTime(username, body.get("time"));
+            
+            return ResponseEntity.ok(Map.of("message", "利用可能時間を削除しました。"));
+            
+        } catch (IllegalArgumentException e) {
+        	
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            
+        } catch (Exception e) {
+        	
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "サーバーエラー: " + e.getMessage()));
+            
+        }
+        
+    }
+    
+
+    
+    
+    
+    
 }

@@ -18,6 +18,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 	
 	@Query("SELECT d FROM Doctor d JOIN FETCH d.availableTimes JOIN FETCH d.user JOIN FETCH d.clinicLocation")
 	List<Doctor> findAllWithUser();
+	
 
     /**
      * ユーザー名（Userエンティティのusername）で医師情報を取得する。
@@ -34,7 +35,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
      * @param username ユーザー名
      * @return 該当する {@link Doctor} を含む Optional（存在しない場合は空）
      */
-    @Query("SELECT d FROM Doctor d JOIN FETCH d.user WHERE d.user.username = :username")
+    @Query("SELECT d FROM Doctor d JOIN FETCH d.user JOIN FETCH d.availableTimes  JOIN FETCH d.clinicLocation WHERE d.user.username = :username")
     Optional<Doctor> findByUser_Username(String username);
 
     
