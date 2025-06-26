@@ -1,0 +1,22 @@
+%% Smart Clinic – Component Diagram (Backend)  C4 level-3
+
+C4Component
+title Smart Clinic – Spring Boot API Internal
+
+Container(api, "Spring Boot API")
+
+Component(controller, "✦ Controller Layer", "RestController", "HTTP リクエスト ⇄ DTO")
+Component(service   , "✦ Service Layer", "Business Logic", "トランザクション管理 / バリデーション")
+Component(repo      , "✦ Repository Layer", "Spring-Data JPA", "MySQL CRUD")
+Component(sec       , "✦ Security", "JWT Filter / PasswordEncoder", "認証・認可")
+Component(mapper    , "✦ Mapper", "MapStruct", "DTO ⇄ Entity 変換")
+Component(mongoRepo , "✦ Mongo Repository", "Spring-Data Mongo", "処方箋")
+
+Rel(controller, service, "呼び出し")
+Rel(service   , repo   , "JPA 操作")
+Rel(service   , mongoRepo , "Mongo CRUD")
+Rel(service   , sec    , "トークン発行 / 検証")
+Rel(repo      , mysql  , "JDBC")
+Rel(mongoRepo , mongo  , "BSON")
+
+SHOW_LEGEND()

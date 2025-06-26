@@ -1,0 +1,27 @@
+%% Smart Clinic – Container (C4 level-2)
+
+C4Container
+title Smart Clinic – Container Diagram
+
+System_Boundary(sc, "Smart Clinic") {
+
+  Container(spa,  "Web Frontend", "React / Tailwind", "SPA – 3 ロール共通 UI")
+  Container(api,  "Backend API",  "Spring Boot 3", "JWT 認証 / REST / CORS")
+  ContainerDb(mysql, "MySQL", "RDS 8.x", "正規化テーブル")
+  ContainerDb(mongo, "MongoDB", "Atlas", "非正規化ドキュメント")
+
+  Container(queue, "Message Queue", "RabbitMQ", "イベント駆動 (Optional)")
+}
+
+Rel_L(patient, spa , "HTTPS")
+Rel_L(doctor , spa , "HTTPS")
+Rel_L(admin  , spa , "HTTPS")
+
+Rel(spa , api  , "REST (Axios / fetch)", "JSON + JWT")
+Rel(api , mysql, "JPA / JDBC")
+Rel(api , mongo, "Spring Data Mongo")
+Rel(api , queue, "Publish Domain Event")
+
+Rel_Back(api , ses, "SMTP / HTTPS")
+
+SHOW_LEGEND()
