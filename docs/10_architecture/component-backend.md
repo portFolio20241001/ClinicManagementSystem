@@ -31,7 +31,8 @@ flowchart TD
     security -- filters --> controller
     security -- "・token認証しROLE取得
                 ・POST /api/auth/loginでJWT発行
-    （jwtAuthFilter, UserDetailsService,　jwtService）" --> service
+    （jwtAuthFilter, UserDetailsService,　jwtService）
+        ⇒　SecurityContextに認証情報をセット" --> service
 
     service --> repoJpa
     service --> repoMongo
