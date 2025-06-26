@@ -128,7 +128,7 @@
 		  <artifactId>jjwt-jackson</artifactId>
 		  <version>0.12.6</version>
 		  <scope>runtime</scope>
-</dependency>
+		</dependency>
 		
 		<!-- springdoc-openapi-ui: Swagger UI を表示するための依存関係 -->
 		<dependency>
@@ -137,16 +137,30 @@
 	      <version>2.5.0</version>
 	   </dependency>
 
+
+
+
+
+
+		<!--
 		<dependency>
 			<groupId>com.example</groupId>
 			<artifactId>CourseraSpringBookAppCrudSample</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
+		</dependency>-->
+		
+		<!--
 		<dependency>
 			<groupId>com.project</groupId>
 			<artifactId>code</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		
+		-->
+		
+		
+		
+		
 	</dependencies>
 
 	<build>
