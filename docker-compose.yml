@@ -1,0 +1,76 @@
+version: "3.9"               # ← condition を使うなら 3.9 以上
+
+x-common-env: &common-env     # 共通環境変数
+  TZ: Asia/Tokyo
+  SPRING_PROFILES_ACTIVE: dev
+  JWT_SECRET: dev-secret
+
+services:
+#──────────────────────────── MySQL ────────────────────────────
+  mysql:
+    image: mysql:8.4
+    container_name: clinic-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      <<: *common-env
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: clinic
+      MYSQL_USER: clinic
+      MYSQL_PASSWORD: clinic
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      retries: 5
+
+#─────────────────────────── MongoDB ───────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: clinic-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      retries: 5
+
+#─────────────────────────── Spring Boot API ───────────────────
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: clinic-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/clinic?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tokyo
+      SPRING_DATASOURCE_USERNAME: clinic
+      SPRING_DATASOURCE_PASSWORD: clinic
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/clinic
+
+#─────────────────────────── Front-End SPA (例) ────────────────
+#  spa:
+#    build:
+#      context: ../frontend
+#      dockerfile: Dockerfile
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - app
+
+#─────────────────────────── 永続ボリューム ────────────────────
+volumes:
+  mysql-data:
+  mongo-data:
