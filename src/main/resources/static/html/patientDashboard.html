@@ -1,150 +1,219 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Smart Clinic - Patient Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f9fafb;
-      color: #1f2937;
-    }
-
-    header {
-      background-color: #3b82f6;
-      color: white;
-      padding: 1rem 2rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logout-btn {
-      background-color: #ef4444;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .logout-btn:hover {
-      background-color: #dc2626;
-    }
-
-    .container {
-      padding: 2rem;
-      max-width: 960px;
-      margin: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    th, td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    th {
-      background-color: #f3f4f6;
-      color: #111827;
-    }
-
-    tr:hover {
-      background-color: #f9fafb;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Smart Clinic – Patient Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-  <header>
-    Smart Clinic - Patient Dashboard
-    <button class="logout-btn" onclick="logout()">ログアウト</button>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+  <!-- ╭── HEADER ──╮ -->
+  <header class="bg-blue-900 text-white flex justify-between items-center px-6 py-4 shadow-md">
+    <h1 class="text-[18px] sm:text-xl font-bold">
+      Smart Clinic – Patient Dashboard
+    </h1>
+    <nav class="space-x-3">
+      <a href="/html/createAppointment.html"
+         class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded shadow text-sm font-semibold">
+        新規予約
+      </a>
+      <button id="logoutBtn"
+              class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded shadow text-sm font-semibold">
+        ログアウト
+      </button>
+    </nav>
   </header>
 
-  <div class="container">
-    <h2>医師一覧</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>氏名</th>
-          <th>専門</th>
-          <th>電話番号</th>
-          <th>クリニック名</th>
-        </tr>
-      </thead>
-      <tbody id="doctorTableBody">
-        <tr><td colspan="4">読み込み中...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- ╭── MAIN ──╮ -->
+  <main class="max-w-6xl mx-auto p-6 text-gray-900">
 
+    <!-- 患者プロフィール -->
+    <section id="patientCard" class="bg-white rounded-lg shadow p-6 mb-8 hidden">
+      <h2 class="text-[17px] font-bold mb-4 text-blue-800">プロフィール</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8 text-[15px] font-medium">
+        <div><span class="font-semibold">氏名：</span><span id="p-name"></span></div>
+        <div><span class="font-semibold">電話：</span><span id="p-phone"></span></div>
+        <div><span class="font-semibold">住所：</span><span id="p-address"></span></div>
+        <div><span class="font-semibold">生年月日：</span><span id="p-dob"></span></div>
+      </div>
+    </section>
+
+    <!-- 予約一覧 -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-[17px] font-bold mb-4 text-blue-800">予約一覧</h2>
+
+      <!-- フィルター -->
+      <div class="flex flex-wrap gap-4 mb-4 items-end">
+        <select id="condSel"
+                class="border px-3 py-2 rounded text-[15px] font-medium">
+          <option value="null">すべて</option>
+          <option value="future">今後の予約</option>
+          <option value="past">完了</option>
+          <option value="cancel">キャンセル</option>
+        </select>
+
+        <input id="docFilter" type="text"
+               placeholder="医師名でフィルタ"
+               class="border px-3 py-2 rounded text-[15px] font-medium w-48" />
+
+        <button id="filterBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold">
+          検索
+        </button>
+        <button id="resetBtn"
+                class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">
+          リセット
+        </button>
+      </div>
+
+      <!-- テーブル -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-fixed text-[15px]">
+          <thead class="bg-gray-200 font-semibold">
+            <tr>
+              <th class="w-20 px-3 py-2 border">ID</th>
+              <th class="w-52 px-3 py-2 border">医師名</th>
+              <th class="w-36 px-3 py-2 border">専門</th>
+              <th class="w-52 px-3 py-2 border">日時</th>
+              <th class="w-28 px-3 py-2 border">ステータス</th>
+              <th class="w-32 px-3 py-2 border text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="apptBody" class="text-gray-900"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ╭── SCRIPT ──╯ -->
   <script>
-    async function fetchDoctors() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("ログイントークンが見つかりません。ログインし直してください。");
+    /* ========= 共通 ========= */
+    const token = localStorage.getItem("token");
+    if (!token) location.href = "/login";
+
+    const HEADERS = { "Authorization": "Bearer " + token };
+    const jwtBody = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    const USERNAME = jwtBody.sub;
+
+    let patientId = null;
+    let patientLoaded = false;
+
+    /* ========= 患者情報 ========= */
+    async function fetchPatient() {
+      if (patientLoaded) return;
+      console.log("[API] GET /patient/details");
+      const res = await fetch("/patient/details", { headers: HEADERS });
+      if (!res.ok) throw "患者情報取得失敗";
+      const { patient } = await res.json();
+
+      patientId = patient.id;
+      document.getElementById("p-name").textContent    = patient.user.fullName;
+      document.getElementById("p-phone").textContent   = patient.phone;
+      document.getElementById("p-address").textContent = patient.address;
+      document.getElementById("p-dob").textContent     = patient.dateOfBirth;
+      document.getElementById("patientCard").classList.remove("hidden");
+      patientLoaded = true;
+    }
+
+    /* ========= 予約一覧 ========= */
+    const tbody = document.getElementById("apptBody");
+
+    async function loadAppointments(cond="null", docName="") {
+      await fetchPatient();
+
+      tbody.innerHTML = "";
+      const encName = encodeURIComponent(docName || "null");
+      const path = (cond==="null" && docName==="")
+        ? `/patient/appointments/${patientId}`
+        : `/patient/appointments/filter/${cond}/${encName}`;
+
+      console.log("[API] GET " + path);   /* ★ URL をコンソールに出力 */
+
+      const res = await fetch(path, { headers: HEADERS });
+      if (!res.ok) { alert("予約取得に失敗しました"); return; }
+
+      const payload = await res.json();
+      const apptsRaw = payload.data ?? payload;
+
+      /* ---- 降順ソート ★ ---- */
+      const appts = [...apptsRaw].sort((a,b)=>
+        b.appointmentTime.localeCompare(a.appointmentTime));
+
+      if (appts.length === 0) {
+        tbody.innerHTML =
+          `<tr><td colspan="6" class="py-6 text-center text-gray-500">予約がありません</td></tr>`;
         return;
       }
 
-      try {
-        const response = await fetch("/doctor", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("医師情報の取得に失敗しました。");
+      /* ---- Doctor 情報キャッシュ ---- */
+      const doctorCache = {};
+      for (const ap of appts) {
+        if (!doctorCache[ap.doctorId]) {
+          const dPath = `/doctor/${ap.doctorId}`;
+          console.log("[API] GET " + dPath);          /* ★ */
+          const dRes = await fetch(dPath, { headers: HEADERS });
+          doctorCache[ap.doctorId] = (await dRes.json()).doctor[0];
         }
+        const d = doctorCache[ap.doctorId];
 
-        const data = await response.json();
-        const doctorTableBody = document.getElementById("doctorTableBody");
-        doctorTableBody.innerHTML = "";
+        /* ---- 行スタイル & hover ★ ---- */
+        let rowCls = "transition-colors hover:bg-gray-50 ";            // どの行でも hover 反応
+        if (ap.status === 0) rowCls += "bg-yellow-100 hover:bg-yellow-200";
+        if (ap.status === 2) rowCls += "bg-gray-200 text-gray-500";
 
-        data.doctors.forEach(doctor => {
-          const fullName = doctor.user?.fullName || "未登録";
-          const specialty = doctor.specialty || "未設定";
-          const phone = doctor.phone || "不明";
-          const clinicName = doctor.clinicLocation?.name || "未設定";
+        const statusTxt = ["予約中","完了","キャンセル"][ap.status] ?? ap.status;
 
-          const row = `
-            <tr>
-              <td>${fullName}</td>
-              <td>${specialty}</td>
-              <td>${phone}</td>
-              <td>${clinicName}</td>
-            </tr>
-          `;
-          doctorTableBody.insertAdjacentHTML("beforeend", row);
-        });
+        const opCell = (ap.status === 0)
+          ? `<button onclick="cancelAppt(${ap.id})"
+                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-bold">
+               キャンセル
+             </button>`
+          : "";
 
-      } catch (error) {
-        console.error("エラー:", error);
-        alert("医師情報の表示に失敗しました。");
+        const tr = document.createElement("tr");
+        tr.className = rowCls;
+        tr.innerHTML = `
+          <td class="border px-3 py-2">${ap.id}</td>
+          <td class="border px-3 py-2">${d.user.fullName}</td>
+          <td class="border px-3 py-2">${d.specialty}</td>
+          <td class="border px-3 py-2">${ap.appointmentTime.replace('T',' ')}</td>
+          <td class="border px-3 py-2">${statusTxt}</td>
+          <td class="border px-3 py-2 text-center">${opCell}</td>`;
+        tbody.appendChild(tr);
       }
     }
 
-    function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      location.href = "/login";
+    /* ========= キャンセル ========= */
+    async function cancelAppt(id) {
+      if (!confirm(`予約 ID ${id} をキャンセルしますか？`)) return;
+      console.log("[API] DELETE /appointments/" + id);   /* ★ */
+      const res = await fetch(`/appointments/${id}`, { method:"DELETE", headers:HEADERS });
+      if (res.ok) { alert("キャンセル完了"); reloadTable(); }
+      else        { alert("キャンセル失敗"); }
     }
 
-    window.onload = fetchDoctors;
-  </script>
+    /* ========= フィルター操作 ========= */
+    const condSel   = document.getElementById("condSel");
+    const docInput  = document.getElementById("docFilter");
 
+    function reloadTable(){
+      loadAppointments(condSel.value, docInput.value.trim());
+    }
+
+    document.getElementById("filterBtn").onclick = reloadTable;
+    document.getElementById("resetBtn").onclick = () => {
+      condSel.value = "null"; docInput.value = ""; reloadTable();
+    };
+
+    /* ========= 初回ロード ========= */
+    (async () => { try { await fetchPatient(); await loadAppointments(); } catch(e){ alert(e);} })();
+
+    /* ========= ログアウト ========= */
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.clear(); location.href = "/login";
+    };
+  </script>
 </body>
 </html>

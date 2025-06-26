@@ -1,6 +1,7 @@
 package com.project.back_end.Security;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -36,7 +37,14 @@ public class C_JwtService_B {
      * @return JWT トークン文字列
      */
     public String generateToken(UserDetails userDetails) {
-        return generateToken(Map.of(), userDetails);
+    	
+        // D2_UserDetailsImpl など、自作のUserDetails実装からユーザーIDを取得
+        D2_UserDetailsImpl customUser = (D2_UserDetailsImpl) userDetails;
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", customUser.getUser().getId());  // ★ 追加するクレーム
+    	
+        return generateToken(claims, userDetails);
     }
 
     /**

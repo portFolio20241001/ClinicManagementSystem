@@ -1,13 +1,14 @@
 package com.project.back_end.Repository;
 
-import com.project.back_end.Entity.Doctor;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.project.back_end.Entity.Doctor;
 
 /**
  * Doctor（医師）情報をデータベースから取得・操作するためのリポジトリインターフェース。
@@ -16,8 +17,45 @@ import java.util.Optional;
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 	
 	
-	@Query("SELECT d FROM Doctor d JOIN FETCH d.availableTimes JOIN FETCH d.user JOIN FETCH d.clinicLocation")
+	@Query("""
+			  SELECT 
+			  	DISTINCT d
+			  FROM 
+			  	Doctor d
+			  LEFT JOIN FETCH 
+			  	d.availableTimes
+			  JOIN FETCH 
+			  	d.user
+			  JOIN FETCH 
+			  	d.clinicLocation
+			""")
 	List<Doctor> findAllWithUser();
+	
+	
+
+	@Query("""
+	   SELECT d
+	     FROM Doctor d
+	     JOIN FETCH d.user
+	     JOIN FETCH d.clinicLocation
+	     LEFT JOIN FETCH d.availableTimes
+	    WHERE d.id = :doctorId
+	""")
+	Optional<Doctor> findWithUserClinicTimesById(@Param("doctorId") Long doctorId);
+	
+	
+	// DoctorRepository.java
+	@Query("""
+	   SELECT DISTINCT d
+	     FROM Doctor d
+	     JOIN FETCH d.user
+	     JOIN FETCH d.clinicLocation
+	     JOIN FETCH d.availableTimes t
+	    WHERE t LIKE CONCAT(:#{#date}, '%')
+	""")
+	List<Doctor> findWithTimesOnDate(@Param("date") String yyyymmdd);
+
+	
 	
 
     /**

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Smart Clinic – New Appointment</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans min-h-screen">
+
+  <!-- ╭── HEADER ──╮ -->
+  <header class="bg-blue-900 text-white flex justify-between items-center px-6 py-4 shadow-md">
+    <h1 class="text-[18px] sm:text-xl font-bold">Smart Clinic – 予約作成</h1>
+    <nav class="space-x-3">
+      <a href="/html/patientDashboard.html"
+         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow inline-block">
+        予約一覧
+      </a>
+      <button id="logoutBtn"
+              class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded shadow text-sm font-semibold">
+        ログアウト
+      </button>
+    </nav>
+  </header>
+
+  <!-- ╭── MAIN ──╮ -->
+  <main class="max-w-6xl mx-auto p-6 text-gray-900">
+
+    <!-- ───── 検索 & 日付 ───── -->
+    <section class="bg-white rounded-lg shadow p-6 space-y-6 mb-10">
+      <h2 class="text-[17px] font-bold text-blue-800">予約可能日検索</h2>
+
+      <div class="flex flex-wrap gap-4 items-end">
+        <input id="selDate" type="date"         class="border rounded px-3 py-2 text-[16px]" />
+        <input id="docName" type="text"          placeholder="医師名"   class="border rounded px-3 py-2 w-40 text-[16px]" />
+        <input id="docSpec" type="text"          placeholder="専門"     class="border rounded px-3 py-2 w-40 text-[16px]" />
+        <select id="docPeriod"                   class="border rounded px-3 py-2 text-[16px]">
+          <option value="null">午前/午後</option><option>AM</option><option>PM</option>
+        </select>
+        <button id="filterBtn"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded text-sm font-semibold">
+          絞り込み
+        </button>
+      </div>
+    </section>
+
+    <!-- ───── 結果テーブル ───── -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-[17px] font-bold text-blue-800 mb-4">予約可能一覧</h2>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-fixed text-[16px] border">
+          <thead class="bg-gray-200 font-semibold">
+            <tr>
+              <th class="w-52  border px-3 py-2">医師名</th>
+              <th class="w-32  border px-3 py-2">専門</th>
+              <th class="w-44  border px-3 py-2">クリニック</th>
+              <th class="w-40  border px-3 py-2">空き時間</th>
+              <th class="w-28  border px-3 py-2 text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="slotBody" class="text-gray-900"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ╭── SCRIPT ──╯ -->
+  <script>
+    /* ===== state ===== */
+    const token     = localStorage.getItem("token");
+    if (!token) location.href = "/login";
+    const HEADERS  = { "Authorization": "Bearer " + token };
+    const jwt      = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    let patientId  = null;                  // あとで取得
+    let allSlots   = [];                    // {doctor, time} のリスト
+
+    /* ===== 患者 ID 取得 ===== */
+    (async () => {
+      console.log("[API] GET /patient/details");
+      const res = await fetch("/patient/details", { headers: HEADERS });
+      patientId = (await res.json()).patient.id;
+    })();
+
+    /* ===== 予約可医師一覧ロード ===== */
+    document.getElementById("selDate").onchange = loadDoctorsByDate;
+    async function loadDoctorsByDate(){
+      const day = selDate.value;
+      if(!day){ alert("日付を選択してください"); return; }
+
+      const url = `/doctor/availability/${day}`;
+      console.log("[API] GET " + url);
+      const res = await fetch(url, { headers: HEADERS });
+      if(!res.ok){ alert("医師一覧取得失敗"); return; }
+
+      const { doctors } = await res.json();
+      /* doctors = [ {id, fullName, specialty, clinicLocation, availableTimes[] } ] */
+      // フラット化: 各スロットを 1 行に
+      allSlots = doctors.flatMap(doc => 
+        (doc.availableTimes||[]).map(t => ({
+          doctorId : doc.id,
+          doctor   : doc,
+          slot     : t                                               // yyyy-MM-dd HH:mm
+        }))
+      );
+      applyFilter();                                                // デフォルト描画
+    }
+
+    /* ===== フィルタ ===== */
+    document.getElementById("filterBtn").onclick = applyFilter;
+    function applyFilter(){
+      const name  = docName.value.trim();
+      const spec  = docSpec.value.trim();
+      const per   = docPeriod.value;
+
+      const rows = allSlots.filter(r => {
+        const nMatch = !name ||  r.doctor.fullName.includes(name);
+        const sMatch = !spec ||  r.doctor.specialty.includes(spec);
+        const pMatch = per==="null" ? true :
+                       per==="AM"   ? r.slot.slice(11,13) <  "12" :
+                                      r.slot.slice(11,13) >= "12";
+        return nMatch && sMatch && pMatch;
+      });
+      renderTable(rows);
+    }
+
+    /* ===== 描画 ===== */
+    const tbody = document.getElementById("slotBody");
+    function renderTable(list){
+      tbody.innerHTML = "";
+      if(list.length===0){
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 text-[15px]">
+                             該当する空きはありません
+                           </td></tr>`;
+        return;
+      }
+
+      list
+        .sort((a,b)=> b.slot.localeCompare(a.slot))                       /* 降順 */
+        .forEach(r=>{
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-blue-50 transition-colors";
+          tr.innerHTML = `
+            <td class="border px-3 py-2">${r.doctor.fullName}</td>
+            <td class="border px-3 py-2">${r.doctor.specialty}</td>
+            <td class="border px-3 py-2">${r.doctor.clinicLocation.name}</td>
+            <td class="border px-3 py-2">${r.slot.slice(11)}</td>
+            <td class="border px-3 py-2 text-center">
+              <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-semibold"
+                      onclick='reserve(${JSON.stringify(r).replace(/"/g,"&quot;")})'>
+                予約
+              </button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+    }
+
+    /* ===== 予約 POST ===== */
+    async function reserve(obj){
+      /* obj = { doctorId, doctor, slot } */
+      if(!confirm(`【${obj.slot}】で予約しますか？`)) return;
+
+      const body = {
+        doctor      : { id : obj.doctorId },
+        patient     : { id : patientId },
+        appointmentTime : obj.slot.replace(" ","T"),
+        status      : 0
+      };
+
+      console.log("[API] POST /appointments", body);
+      const res = await fetch("/appointments",{
+        method :"POST",
+        headers:{ ...HEADERS, "Content-Type":"application/json"},
+        body   : JSON.stringify(body)
+      });
+      if(res.ok){ alert("予約完了"); location.href="/html/patientDashboard.html"; }
+      else      { const err = await res.json(); alert(err.error||"登録失敗"); }
+    }
+
+    /* ===== logout ===== */
+    logoutBtn.onclick = ()=>{ localStorage.clear(); location.href="/login"; };
+  </script>
+</body>
+</html>

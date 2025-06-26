@@ -119,6 +119,9 @@ public class LoginController {
     	
     	System.out.println("ログイン認証開始");
     	
+    	System.out.println("request.getUsername()：" + request.getUsername());
+    	System.out.println("request.getPassword()  : " + request.getPassword());
+    	
         try {
 	        // === 認証処理 ===
         	System.out.println("ユーザー認証開始");
@@ -142,17 +145,29 @@ public class LoginController {
 	        // === JWT トークンの発行 ===
 	        // 認証済みユーザーに対してトークンを発行
 	        System.out.println("token発行開始");
-	        
+	        	        
 	        String token = jwtService.generateToken(userDetails);
+	        String role = userDetails.getUser().getRole().name();
 	        
-	        System.out.println("token発行完了。token：" + token);
+	        System.out.println("token発行、Role取得完了。token：" + token + "Role: " + role);
+	        
+	        
+
+	        
+	        Long doctorId = null;
+
+	        if ("ROLE_DOCTOR".equals(role)) {
+	            // DoctorRepository に「findByUser_Id(Long)」を用意しておくと楽
+	            doctorId =userDetails.getUser().getId();
+	        }
+	        
 	
 	        // === トークンとロール情報をレスポンスとして返却 ===
 	        // クライアントはこれを保持し、次回以降 Authorization ヘッダーにセットして使用する
 	        return ResponseEntity.ok(
 	                new LoginResponse(
 	                        token,                          // 発行したJWTトークン
-	                        userDetails.getUser().getRole().name() // ユーザーのロール（例：ROLE_DOCTOR）
+	                        userDetails.getUser().getRole().name() // ユーザーのロール（例：ROLE_DOCTOR）,
 	                )
 	        );
         } catch (AuthenticationException ex) {

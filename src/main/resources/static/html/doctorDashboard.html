@@ -1,145 +1,235 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>Doctor Dashboard - Smart Clinic</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: #f9fafb;
-            color: #1f2937;
-        }
-
-        header {
-            background: linear-gradient(to right, #3b82f6, #2563eb);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 24px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        #availabilityTable {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        #availabilityTable th, #availabilityTable td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .logout-btn {
-            margin-top: 30px;
-            padding: 10px 20px;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .logout-btn:hover {
-            background-color: #dc2626;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Clinic – Doctor Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body>
 
-<header>
-    Smart Clinic - 医師ダッシュボード
-</header>
+<body class="bg-gray-100 font-sans">
 
-<div class="container">
-    <h2>ようこそ、<span id="doctorName">医師</span> さん</h2>
+  <!-- ===== HEADER ===== -->
+  <header class="bg-blue-900 text-white p-4 flex justify-between items-center shadow-md">
+    <h1 class="text-xl font-bold">Smart Clinic – Doctor Dashboard</h1>
 
-    <div>
-        <label for="dateSelect">📅 空き時間を確認する日付:</label>
-        <input type="date" id="dateSelect" />
-        <button onclick="fetchAvailability()">取得</button>
+    <div class="space-x-4">
+      <a href="/html/doctorAvailability.html"
+         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow inline-block">
+        予約可能時間
+      </a>
+
+      <button onclick="logout()"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow">
+        ログアウト
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="max-w-6xl mx-auto mt-8 p-6 bg-white rounded shadow">
+
+    <!-- ─────────────── 検索フォーム ─────────────── -->
+    <section class="mb-6">
+      <h2 class="text-2xl font-bold text-blue-800 mb-4">予約一覧</h2>
+
+      <div class="flex flex-wrap gap-4 items-end">
+        <!-- 単一日付 -->
+        <div>
+          <label class="block text-sm mb-1">日付（単一）</label>
+          <input type="date" id="singleDate" class="border px-3 py-2 rounded" />
+        </div>
+
+        <!-- 期間 -->
+        <div>
+          <label class="block text-sm mb-1">期間（from）</label>
+          <input type="date" id="dateFrom" class="border px-3 py-2 rounded" />
+        </div>
+        <div>
+          <label class="block text-sm mb-1">期間（to）</label>
+          <input type="date" id="dateTo" class="border px-3 py-2 rounded" />
+        </div>
+
+        <!-- 患者名 -->
+        <div>
+          <label class="block text-sm mb-1">患者名（部分一致）</label>
+          <input type="text" id="patientKeyword" placeholder="例：鈴木"
+                 class="border px-3 py-2 rounded" />
+        </div>
+
+        <!-- 検索ボタン 2 種 -->
+        <button onclick="searchByDate()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
+          日付検索
+        </button>
+
+        <button onclick="searchByRange()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow">
+          期間検索
+        </button>
+      </div>
+    </section>
+
+    <!-- ─────────────── 予約テーブル ─────────────── -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-300 text-base">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border px-4 py-2">予約ID</th>
+            <th class="border px-4 py-2">患者名</th>
+            <th class="border px-4 py-2">日時</th>
+            <th class="border px-4 py-2">ステータス</th>
+            <th class="border px-4 py-2">処方箋</th>
+            <th class="border px-4 py-2 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="apptBody" class="text-gray-800"></tbody>
+      </table>
     </div>
 
-    <div style="margin-top: 30px;">
-        <h3>🕐 空き時間一覧</h3>
-        <table id="availabilityTable">
-            <thead>
-                <tr><th>時間帯</th></tr>
-            </thead>
-            <tbody id="availabilityBody">
-                <tr><td>選択された日付の空き時間を表示</td></tr>
-            </tbody>
-        </table>
-    </div>
+  </main>
 
-    <button class="logout-btn" onclick="logout()">ログアウト</button>
-</div>
+  <!-- ===== SCRIPTS ===== -->
+  <script>
+    /* ---------- JWT decode ---------- */
+    function parseJwt(token) {
+      try {
+        const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const json   = decodeURIComponent(atob(base64).split('').map(c => '%' +
+                        ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        return JSON.parse(json);
+      } catch { return {}; }
+    }
 
-<script>
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const doctorName = localStorage.getItem("username"); // 任意で保存していた場合
+    const token                           = localStorage.getItem("token");
+    const { userId: doctorId }            = parseJwt(token);
 
-    // 表示用
-    document.getElementById("doctorName").textContent = doctorName || "医師";
+    /* ---------- 初期ロード：本日 ---------- */
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById("singleDate").value = today;
+      loadAppointments(doctorId, today);
+    });
 
-    // デフォルトで今日の日付セット
-    document.getElementById("dateSelect").valueAsDate = new Date();
+    /* ---------- 単一日付検索 ---------- */
+    async function searchByDate() {
+      const single = document.getElementById("singleDate").value;
+      const name   = document.getElementById("patientKeyword").value.trim();
 
-    async function fetchAvailability() {
-        const date = document.getElementById("dateSelect").value;
-        const doctorId = 2; // TODO: ログインしたユーザーのdoctorIdを取得 or APIから自己情報取得
+      if (!single) { alert("日付を選択してください。"); return; }
+      await loadAppointments(doctorId, single, name);
+    }
 
-        const res = await fetch(`/doctor/availability/${doctorId}/${date}`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+    /* ---------- 期間検索 ---------- */
+    async function searchByRange() {
+      const from = document.getElementById("dateFrom").value;
+      const to   = document.getElementById("dateTo").value;
+      const name = document.getElementById("patientKeyword").value.trim();
 
-        const tbody = document.getElementById("availabilityBody");
-        tbody.innerHTML = "";
+      if (!from || !to)               { alert("期間（from / to）を入力してください。"); return; }
+      if (from > to)                  { alert("from は to より前の日付を指定してください。"); return; }
 
-        if (res.ok) {
-            const data = await res.json();
-            const times = data.availableTimes;
+      const days = dateRange(from, to);
+      let all    = [];
+      for (const d of days) {
+        const list = await fetchAppointments(doctorId, d, name);
+        all.push(...list);
+      }
+      renderTable(all);
+    }
 
-            if (times.length === 0) {
-                tbody.innerHTML = "<tr><td>空き時間はありません。</td></tr>";
-            } else {
-                times.forEach(time => {
-                    const row = `<tr><td>${time}</td></tr>`;
-                    tbody.innerHTML += row;
-                });
-            }
+    /* ---------- 共通：取得 & 描画 ---------- */
+    async function loadAppointments(docId, dateStr, keyword="") {
+      const list = await fetchAppointments(docId, dateStr, keyword);
+      renderTable(list);
+    }
+
+    async function fetchAppointments(docId, dateStr, keyword="") {
+      const url = keyword
+        ? `/appointments/${docId}/${dateStr}/${encodeURIComponent(keyword)}`
+        : `/appointments/${docId}/${dateStr}`;
+
+      const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+      if (!res.ok) { alert("予約取得に失敗しました"); return []; }
+      const data = await res.json();
+      return data.appointments || [];
+    }
+
+    /* ---------- テーブル描画 ---------- */
+    async function renderTable(appts) {
+      const tbody = document.getElementById("apptBody");
+      tbody.innerHTML = "";
+
+      for (const appt of appts) {
+        const pres   = await fetchPrescription(appt.id);
+        const hasPre = !!pres;
+
+        /* 行カラー：status & 処方箋有無 */
+        let rowClass = "transition-colors ";
+        if (appt.status === 2) {                 // Cancelled
+          rowClass += "bg-gray-200 text-gray-500";
+        } else if (hasPre) {
+          rowClass += "hover:bg-blue-50";
         } else {
-            tbody.innerHTML = "<tr><td>取得に失敗しました（認証エラーなど）</td></tr>";
+          rowClass += "bg-yellow-100 hover:bg-yellow-200";
         }
+
+        /* 操作セル内容 */
+		/* 操作セル内容 – bigger prescription button */
+		const actionCell = (appt.status === 2 || hasPre)
+		  ? ""
+		  : `<a href="/html/prescriptionCreate.html?appointmentId=${appt.id}&patientId=${appt.patientId}"
+		         class="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded text-sm font-semibold">
+		       処方箋登録
+		     </a>`;
+
+
+        const tr = document.createElement("tr");
+        tr.className = rowClass;
+        tr.innerHTML = `
+          <td class="border px-4 py-2">${appt.id}</td>
+          <td class="border px-4 py-2">${appt.patientName ?? "N/A"}</td>
+          <td class="border px-4 py-2">${appt.appointmentTime.replace('T',' ')}</td>
+          <td class="border px-4 py-2">${statusLabel(appt.status)}</td>
+          <td class="border px-4 py-2">
+            ${hasPre
+              ? `<div class="leading-snug">
+                   <div><span class="font-semibold">処方薬:</span> ${pres.medication}</div>
+                   <div><span class="font-semibold">使用量:</span> ${pres.dosage}</div>
+                   <div><span class="font-semibold">指示:</span> ${pres.doctorNotes}</div>
+                 </div>`
+              : "<span class='italic text-gray-500'>未登録</span>"
+            }
+          </td>
+          <td class="border px-4 py-2 text-center">${actionCell}</td>
+        `;
+        tbody.appendChild(tr);
+      }
     }
 
+    async function fetchPrescription(appointmentId) {
+      const res = await fetch(`/prescription/${appointmentId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.prescription ?? null;
+    }
+
+    function statusLabel(v) { return ["Scheduled","Completed","Cancelled"][v] ?? v; }
+
+    function dateRange(from,to) {
+      const arr=[], d=new Date(from), end=new Date(to);
+      while (d<=end){ arr.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+      return arr;
+    }
+
+    /* ---------- LOGOUT ---------- */
     function logout() {
-        localStorage.clear();
-        window.location.href = "/";
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      location.href = "/login";
     }
-
-    // 初回ロード時に取得
-    window.onload = fetchAvailability;
-</script>
-
+  </script>
 </body>
 </html>

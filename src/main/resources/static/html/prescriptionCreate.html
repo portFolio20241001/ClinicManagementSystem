@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Clinic – 処方箋登録</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- ===== HEADER ===== -->
+  <header class="bg-blue-900 text-white p-4 flex justify-between items-center shadow-md">
+    <h1 class="text-xl font-bold">処方箋登録</h1>
+    <a href="/html/doctorDashboard.html"
+       class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow">
+      ← 戻る
+    </a>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="max-w-xl mx-auto mt-8 p-6 bg-white rounded shadow">
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">Prescription Form</h2>
+
+    <form id="prescriptionForm" class="space-y-5">
+
+      <!-- Medication -->
+      <div>
+        <label class="block text-sm font-medium mb-1" for="medication">処方薬</label>
+        <input type="text" id="medication" name="medication" required
+               placeholder="例: アスピリン"
+               class="w-full border px-3 py-2 rounded" />
+      </div>
+
+      <!-- Dosage -->
+      <div>
+        <label class="block text-sm font-medium mb-1" for="dosage">使用量</label>
+        <input type="text" id="dosage" name="dosage" required
+               placeholder="例: 100 mg"
+               class="w-full border px-3 py-2 rounded" />
+      </div>
+
+      <!-- Doctor notes -->
+      <div>
+        <label class="block text-sm font-medium mb-1" for="notes">指示・備考</label>
+        <textarea id="notes" name="notes" rows="4"
+                  placeholder="服用タイミングや注意点など"
+                  class="w-full border px-3 py-2 rounded"></textarea>
+      </div>
+
+      <!-- SUBMIT -->
+      <button type="submit"
+              class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded text-lg font-semibold">
+        処方箋を登録する
+      </button>
+    </form>
+  </main>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script>
+    /* ------- JWT デコード (簡易) ------- */
+    function parseJwt (token) {
+      try {
+        const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+        const json   = decodeURIComponent(atob(base64).split('').map(c=>'%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        return JSON.parse(json);
+      } catch { return {}; }
+    }
+
+    /* ------- クエリ取得 ------- */
+    const params        = new URLSearchParams(location.search);
+    const appointmentId = params.get("appointmentId");
+    const patientId     = params.get("patientId");     // ※ Dashboard 側で付与必須
+    if (!appointmentId || !patientId) {
+      alert("URL から appointmentId / patientId が取得できませんでした。");
+      location.href = "/html/doctorDashboard.html";
+    }
+
+    /* ------- 送信処理 ------- */
+    document.getElementById("prescriptionForm").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const token = localStorage.getItem("token");
+      if (!token) { alert("ログイン情報が見つかりません。再ログインしてください。"); return; }
+
+      const body = {
+        patientId,
+        appointmentId: Number(appointmentId),
+        medication   : document.getElementById("medication").value.trim(),
+        dosage       : document.getElementById("dosage").value.trim(),
+        doctorNotes  : document.getElementById("notes").value.trim()
+      };
+
+      try {
+        const res = await fetch("/prescription", {
+          method : "POST",
+          headers: {
+            "Content-Type" : "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          alert("処方箋を登録しました！");
+          location.href = "/html/doctorDashboard.html";
+        } else {
+          const err = await res.json();
+          alert(err.error || "登録に失敗しました。");
+        }
+      } catch {
+        alert("サーバーへ接続できませんでした。");
+      }
+    });
+  </script>
+</body>
+</html>

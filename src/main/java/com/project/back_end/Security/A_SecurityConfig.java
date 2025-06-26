@@ -51,11 +51,11 @@ public class A_SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // === ログイン画面・静的リソース・APIログインは全員アクセス許可 ===
                 .requestMatchers("/", "/login/**", "/html/**","/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/api-docs/**", "/swagger-ui/**").permitAll()
+                .requestMatchers("/api-docs/**", "/swagger-ui/**","/api-docs.yaml").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // === DoctorController ===
-                .requestMatchers(HttpMethod.GET, "/doctor/availability/doctorId/**").hasAnyRole("PATIENT", "DOCTOR")
+                .requestMatchers(HttpMethod.GET, "/doctor/availability/**").hasAnyRole("PATIENT", "DOCTOR")
                 .requestMatchers(HttpMethod.GET, "/doctor/doctorDashboard/**").hasRole("DOCTOR")
                 .requestMatchers(HttpMethod.GET, "/doctor/**").permitAll()
                 

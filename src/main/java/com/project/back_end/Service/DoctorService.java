@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 //import java.util.Optional;	//　SpringSecurity対応により廃止
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.back_end.DTO.DoctorAvailabilityDTO;
 //import com.project.back_end.DTO.Login;	//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Appointment;
 import com.project.back_end.Entity.Doctor;
@@ -27,6 +29,7 @@ import com.project.back_end.Repository.AppointmentRepository;
 import com.project.back_end.Repository.DoctorRepository;
 import com.project.back_end.Repository.UserRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -264,7 +267,12 @@ public class DoctorService {
 	        User existingUser = existingDoctor.getUser();
 
 	        existingUser.setUsername(doctor.getUser().getUsername());
-	        existingUser.setPasswordHash(passwordEncoder.encode(doctor.getUser().getPasswordHash()));
+//	        existingUser.setPasswordHash(passwordEncoder.encode(doctor.getUser().getPasswordHash()));
+	        //　フロント側でPWも入力していた場合セットする。
+	        if (doctor.getUser().getPasswordHash() != null && !doctor.getUser().getPasswordHash().isBlank()) {
+	        	existingUser.setPasswordHash(passwordEncoder.encode(doctor.getUser().getPasswordHash()));
+	        }
+	        
 	        existingUser.setFullName(doctor.getUser().getFullName());
 	        existingUser.setRole(User.Role.ROLE_DOCTOR); // 明示的にセット
 	        existingUser.setDoctor(existingDoctor);      // 双方向の整合性
@@ -588,6 +596,99 @@ public class DoctorService {
     
     
     
+ // …/service/DoctorService.java
+    public Doctor getDoctorWithRelations(Long doctorId) {
+        return doctorRepository.findWithUserClinicTimesById(doctorId)
+               .orElseThrow(EntityNotFoundException::new);
+    }
+
+    
+    
+    
+    
+    /**
+     * 指定された日付に診療可能な医師の一覧を取得します。
+     * 
+     * <p>
+     * 各医師の availableTimes（診療可能時間帯）のうち、
+     * 指定日を含む医者をはじめに抽出、
+     * かつ現時点で予約されていない時間スロットのみを抽出し、
+     * その日に予約可能な医師のみをリストアップします。
+     * </p>
+     * 
+     * @param targetDate 予約を希望する日付（例：2025-06-25）
+     * @return 空きスロットを持つ医師の一覧（DoctorAvailabilityDTOのリスト）
+     */
+    public List<DoctorAvailabilityDTO> findDoctorsAvailableOn(LocalDate targetDate) {
+
+        // LocalDateを文字列に変換（例："2025-06-25"）
+        String dateStr = targetDate.toString();
+
+        // 指定された日付にavailableTimesが含まれる医師の一覧を取得（LIKE検索）
+        List<Doctor> doctors = doctorRepository.findWithTimesOnDate(dateStr);
+
+        // availableTimesのパースに使うフォーマッターを定義（時刻範囲があるため先頭部分だけ使う）
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        // 各医師ごとに空きスロットを算出してDTOに変換
+        return doctors.stream().map(d -> {
+
+            // 医師IDと対象日で予約済みの時間帯を取得（キャンセル除く）
+            Set<LocalDateTime> bookedAppointments = appointmentRepository.findTimesByDoctorAndDate(d.getId(), targetDate);
+
+            // availableTimesから、指定日かつ未予約のスロットのみを残す
+            List<String> remains = d.getAvailableTimes().stream()
+                .filter(t -> t.startsWith(dateStr))	// 対象日で始まる文字列だけに絞る（例："2025-06-25 ..."）
+                .filter(t -> {									// 予約されていない時間帯のみを残す
+                    try {
+                        // 文字列の前半 "yyyy-MM-dd HH:mm" を抽出してLocalDateTimeに変換
+                        String startTimePart = t.substring(0, 16);
+                        LocalDateTime parsed = LocalDateTime.parse(startTimePart, fmt);
+
+                        // 予約リストに含まれていなければtrue（空きあり）
+                        return !bookedAppointments.contains(parsed);
+                    } catch (Exception e) {
+                        // パースできない文字列は無効として除外
+                        return false;
+                    }
+                })
+                .sorted()		// 昇順に並べ替え（時間順に並べる）
+                .toList();		// Listとして収集
+
+            // 空き時間が一つもなければこの医師はスキップ（nullを返す）
+            if (remains.isEmpty()) return null;
+
+            // 空き時間がある医師をDoctorAvailabilityDTOとして返す
+            return new DoctorAvailabilityDTO(d, remains);
+
+        })
+        // nullを除外（空きがある医師だけ残す）
+        .filter(Objects::nonNull)
+
+        // 最終的にリストで返す
+        .toList();
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -704,7 +805,8 @@ public class DoctorService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
             LocalDateTime parsedTime;
             try {
-                parsedTime = LocalDateTime.parse(time, formatter);
+            	String startTimePart = time.substring(0, 16);
+                parsedTime = LocalDateTime.parse(startTimePart, formatter);
             } catch (DateTimeParseException e) {
                 throw new IllegalArgumentException("時間形式が不正です。正しい形式（例: 2025-06-30 09:00）で指定してください。");
             }

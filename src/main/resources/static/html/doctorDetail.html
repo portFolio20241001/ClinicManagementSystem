@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Detail – Smart Clinic</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- ===== Header ===== -->
+  <header class="bg-blue-900 text-white px-6 py-4 flex justify-between items-center shadow">
+    <h1 class="text-xl font-semibold">Smart Clinic – Doctor Detail</h1>
+    <nav class="space-x-4">
+      <a href="/html/adminDashboard.html" class="hover:underline">Home</a>
+      <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">ログアウト</button>
+    </nav>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <section id="detailCard" class="bg-white shadow rounded-lg p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">医師詳細</h2>
+        <div class="space-x-2">
+          <a id="editBtn" href="#" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">編集</a>
+          <button id="deleteBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">削除</button>
+        </div>
+      </div>
+
+      <!-- Doctor Profile -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <p class="text-gray-600">氏名</p>
+          <p id="fullName" class="text-lg font-medium"></p>
+
+          <p class="mt-4 text-gray-600">専門</p>
+          <p id="specialty" class="text-lg font-medium"></p>
+
+          <p class="mt-4 text-gray-600">電話番号</p>
+          <p id="phone" class="text-lg font-medium"></p>
+        </div>
+        <div>
+          <p class="text-gray-600">クリニック</p>
+          <p id="clinicName" class="text-lg font-medium"></p>
+
+          <p class="mt-4 text-gray-600">作成日</p>
+          <p id="createdAt" class="text-lg font-medium"></p>
+        </div>
+      </div>
+
+      <!-- Available Times -->
+      <h3 class="mt-8 text-xl font-semibold text-gray-800">診療可能時間</h3>
+      <ul id="timesList" class="mt-2 list-disc list-inside space-y-1 text-gray-700"></ul>
+    </section>
+  </main>
+
+  <!-- ===== Scripts ===== -->
+  <script>
+    const token = localStorage.getItem("token");
+
+    // ---- Util: doctorId を sessionStorage or query から取得 ----
+    function getDoctorId() {
+      //const saved = sessionStorage.getItem("selectedDoctorId");
+      //if (saved) return saved;
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+    const doctorId = getDoctorId();
+    
+    console.log("doctorId: "+doctorId);
+    
+    if (!doctorId) {
+      alert("医師 ID が不明です。");
+      location.href = "/html/adminDashboard.html";
+    }
+
+    // ---- Fetch & Populate ----
+    async function loadDoctor() {
+      try {
+        const res = await fetch(`/doctor`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("取得に失敗しました。");
+        const { doctors } = await res.json();
+        const doctor = doctors.find((d) => d.id == doctorId);
+        if (!doctor) throw new Error("該当医師が見つかりません。");
+
+        // DOM 反映
+        document.getElementById("fullName").textContent =
+          doctor.user?.fullName ?? "未登録";
+        document.getElementById("specialty").textContent =
+          doctor.specialty ?? "未設定";
+        document.getElementById("phone").textContent = doctor.phone ?? "不明";
+        document.getElementById("clinicName").textContent =
+          doctor.clinicLocation?.name ?? "未設定";
+        document.getElementById("createdAt").textContent =
+          doctor.createdAt?.split("T")[0] ?? "-";
+
+        const ul = document.getElementById("timesList");
+        ul.innerHTML = "";
+        (doctor.availableTimes?.length ? doctor.availableTimes : ["―"]).forEach(
+          (t) => {
+            const li = document.createElement("li");
+            li.textContent = t;
+            ul.appendChild(li);
+          }
+        );
+      } catch (e) {
+        alert(e.message);
+        location.href = "/html/adminDashboard.html";
+      }
+    }
+
+    // ---- Delete ----
+    async function deleteDoctor() {
+      if (!confirm("本当に削除しますか？")) return;
+      try {
+        const res = await fetch(`/doctor/${doctorId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          alert("削除しました。");
+          sessionStorage.removeItem("selectedDoctorId");
+          location.href = "/html/adminDashboard.html";
+        } else {
+          const err = await res.json();
+          alert(err.error ?? "削除に失敗しました。");
+        }
+      } catch {
+        alert("サーバーエラーが発生しました。");
+      }
+    }
+
+ // ---- Events ----
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.clear();
+      sessionStorage.clear();
+      location.href = "/login";
+    };
+
+    document.getElementById("editBtn").onclick = (e) => {
+      e.preventDefault();
+      // ① もし sessionStorage を使い続けたい場合は残す
+      sessionStorage.setItem("selectedDoctorId", doctorId);
+      // ② id をクエリパラメータとして付与して遷移
+      location.href = `/html/doctorEdit.html?id=${doctorId}`;
+    };
+
+    document.getElementById("deleteBtn").onclick = deleteDoctor;
+
+    // ---- Init ----
+    loadDoctor();
+
+  </script>
+</body>
+</html>

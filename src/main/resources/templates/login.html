@@ -95,6 +95,12 @@
 	        </div>
 	        <button type="submit" class="login-btn">ログイン</button>
 	    </form>
+	    
+	        <!-- ▼ 追加：サインアップへの誘導 -->
+	    <div style="margin-top:18px;text-align:center">
+	      <a href="/html/patientSignup.html" class="link">新規患者登録</a>
+	    </div>
+	    
 	    <div class="footer">
 	        &copy; 2025 Smart Clinic
 	    </div>
@@ -120,6 +126,8 @@ document.querySelector("form").addEventListener("submit", async function (e) {
             const data = await res.json();
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", data.role);
+            
+            console.log(data);
 
             // ロールに応じてHTMLページに遷移（SPA構成）
             switch (data.role) {

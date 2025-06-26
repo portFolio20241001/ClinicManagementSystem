@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Smart Clinic – Doctor Edit</title>
+  <!-- Tailwind CDN（開発ビルド用） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen flex flex-col">
+
+<!-- ╭─────────────────╮ HEADER ╭─────────────────╮ -->
+<header class="bg-indigo-700 text-white flex justify-between items-center px-6 py-3 shadow">
+  <h1 class="text-xl font-semibold">Smart Clinic Admin</h1>
+  <nav class="space-x-4 text-sm">
+    <a href="/html/adminDashboard.html" class="hover:underline">Home</a>
+    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Logout</button>
+  </nav>
+</header>
+
+<!-- ╭─────────────────╮ MAIN ╭─────────────────╮ -->
+<main class="w-full max-w-3xl mx-auto bg-white mt-8 p-8 rounded-lg shadow">
+  <h2 class="text-2xl font-bold mb-6 text-gray-700">医師情報を更新</h2>
+
+  <form id="editForm" class="space-y-6">
+    <!-- ───── 氏名 ───── -->
+    <div class="flex gap-4">
+      <div class="w-1/2">
+        <label class="block text-sm font-medium text-gray-600">姓 (Last Name)</label>
+        <input id="lastName" type="text" required placeholder="佐藤"
+               class="mt-1 w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div class="w-1/2">
+        <label class="block text-sm font-medium text-gray-600">名 (First Name)</label>
+        <input id="firstName" type="text" required placeholder="太郎"
+               class="mt-1 w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-400" />
+      </div>
+    </div>
+
+    <!-- ───── ユーザー名 / パスワード ───── -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-600">ユーザー名</label>
+        <input id="username" type="text" required placeholder="doctorUser11"
+               class="mt-1 w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600">パスワード</label>
+        <input id="password" type="password"
+               class="mt-1 w-full border rounded px-3 py-2"
+               placeholder="変更しない場合は空欄" />
+      </div>
+    </div>
+
+    <!-- ───── 専門 / 電話 ───── -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-600">専門</label>
+        <input id="specialty" type="text" required placeholder="小児科"
+               class="mt-1 w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600">電話番号</label>
+        <input id="phone" type="text" required placeholder="090-1234-5678"
+               class="mt-1 w-full border rounded px-3 py-2" />
+      </div>
+    </div>
+
+    <!-- ───── クリニック ───── -->
+    <div>
+      <label class="block text-sm font-medium text-gray-600">クリニック</label>
+      <select id="clinic" required class="mt-1 w-full border rounded px-3 py-2">
+        <option value="1">中央クリニック</option>
+        <option value="2">西区クリニック</option>
+        <option value="3">東区クリニック</option>
+        <option value="4">南区クリニック</option>
+        <option value="5">北区クリニック</option>
+      </select>
+    </div>
+
+    <!-- ───── 診療可能時間（開始時刻のみ） ───── -->
+    <div>
+      <label class="block text-sm font-medium text-gray-600 mb-1">診療可能時間</label>
+
+      <!-- 追加フォーム -->
+      <div class="flex flex-wrap gap-2 mb-2">
+        <input type="date" id="dateInput"  class="border rounded px-3 py-2" />
+        <input type="time" id="timeInput"  class="border rounded px-3 py-2" />
+        <button type="button" id="addTimeBtn"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 rounded">
+          追加
+        </button>
+      </div>
+
+      <!-- 追加済みチップ -->
+      <ul id="timeList" class="flex flex-wrap gap-2"></ul>
+    </div>
+
+    <div class="text-right">
+      <button type="submit"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded">
+        更新する
+      </button>
+    </div>
+  </form>
+</main>
+
+<!-- ╭─────────────────╮ SCRIPT ╰─────────────────╯ -->
+<script>
+/* ====== 共通値 ====== */
+const API_BASE  = "/doctor";
+const token     = localStorage.getItem("token");
+const headers   = { Authorization: "Bearer " + token };
+const doctorId  = new URLSearchParams(location.search).get("id");
+
+/* ====== チップ操作用 ====== */
+const timeList = document.getElementById("timeList");
+const times    = [];           // 文字列配列 (YYYY-MM-DD HH:mm)
+
+/* ---- 追加ボタン ---- */
+document.getElementById("addTimeBtn").onclick = () => {
+  const d = dateInput.value;
+  const t = timeInput.value;
+  if (!d || !t) { alert("日付と時刻を指定してください"); return; }
+
+  const slot = `${d} ${t}`;
+  if (times.includes(slot)) { alert("同じ時間が既に登録されています"); return; }
+
+  times.push(slot);
+  renderChips();
+  dateInput.value = timeInput.value = "";
+};
+
+/* ---- チップ描画 ---- */
+function renderChips() {
+  timeList.innerHTML = "";
+  times.forEach((s, idx) => {
+    const li = document.createElement("li");
+    li.className = "bg-slate-200 px-3 py-1 rounded flex items-center gap-2 text-sm";
+    li.innerHTML = `
+      <span>${s}</span>
+      <button class="text-red-600" onclick="removeTime(${idx})">✕</button>`;
+    timeList.appendChild(li);
+  });
+}
+window.removeTime = i => { times.splice(i,1); renderChips(); };
+
+/* ====== 初期ロード (GET /doctor) ====== */
+(async () => {
+  try {
+    const res = await fetch(API_BASE, { headers });
+    const data = await res.json();
+    const doc  = data.doctors.find(d => d.id == doctorId);
+    if (!doc) throw "対象医師が見つかりません";
+
+    // フォームに反映
+    const [last, first=""] = (doc.user.fullName || "").split(" ");
+    lastName.value   = last;
+    firstName.value  = first;
+    username.value   = doc.user.username;
+    specialty.value  = doc.specialty;
+    phone.value      = doc.phone;
+    clinic.value     = doc.clinicLocation.id;
+
+    (doc.availableTimes || []).forEach(s => { times.push(s); });
+    renderChips();
+  } catch (e) {
+    alert(e);
+    location.href = "/html/adminDashboard.html";
+  }
+})();
+
+/* ====== 更新送信 (PUT) ====== */
+editForm.onsubmit = async ev => {
+  ev.preventDefault();
+  const body = {
+    id           : Number(doctorId),
+    specialty    : specialty.value.trim(),
+    phone        : phone.value.trim(),
+    clinicLocation : { id: Number(clinic.value) },
+    availableTimes : times,
+    user : {
+      username     : username.value.trim(),
+      passwordHash : password.value ? password.value.trim() : "dummy",
+      role         : "ROLE_DOCTOR",
+      fullName     : `${lastName.value.trim()} ${firstName.value.trim()}`
+    }
+  };
+
+  try {
+    const res = await fetch(API_BASE, {
+      method : "PUT",
+      headers: { ...headers, "Content-Type":"application/json" },
+      body   : JSON.stringify(body)
+    });
+    if(res.ok){
+      alert("更新が完了しました");
+      location.href = "/html/adminDashboard.html?refresh=1";
+    } else {
+      const err = await res.json();
+      throw err.error || "更新に失敗しました";
+    }
+  } catch (e){ alert(e); }
+};
+
+/* ====== logout ====== */
+logoutBtn.onclick = () => { localStorage.clear(); location.href = "/login"; };
+</script>
+</body>
+</html>

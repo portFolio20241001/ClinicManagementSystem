@@ -7,8 +7,10 @@ import org.springframework.stereotype.Repository;
 
 import jakarta.transaction.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Repository  // SpringがこのインタフェースをJPAリポジトリとして認識するためのアノテーション
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
@@ -204,6 +206,30 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     
     
     boolean existsByDoctorIdAndAppointmentTime(Long doctorId, LocalDateTime appointmentTime);
+    
+    
+    
+    /**
+     * 指定された医師IDと日付に基づいて、その日に予約されている（キャンセル以外の）予約時間を取得します。
+     *
+     * <p>このメソッドは、該当医師が指定日（例：2025-06-25）に既に予約されている
+     * `appointmentTime`（診療予定日時）をすべて返します。
+     * キャンセルされた予約（status = 2）は除外されます。</p>
+     *
+     * @param doctorId   医師のID
+     * @param targetDate 対象日（例：2025-06-25）
+     * @return 指定日に予約されている診療時間（LocalDateTime）のセット（重複なし）
+     */
+    @Query("""
+    		   SELECT a.appointmentTime
+    		     FROM Appointment a
+    		    WHERE a.doctor.id = :doctorId
+    		      AND FUNCTION('DATE', a.appointmentTime) = :targetDate
+    		      AND a.status <> 2
+    		""")
+    		Set<LocalDateTime> findTimesByDoctorAndDate(@Param("doctorId") Long doctorId,
+    																					@Param("targetDate") LocalDate targetDate);
+
 
     
     

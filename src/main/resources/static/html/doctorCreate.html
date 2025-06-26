@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Smart Clinic – 新規医師登録</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- ===== HEADER ===== -->
+  <header class="bg-blue-900 text-white p-4 flex justify-between items-center shadow">
+    <h1 class="text-xl font-bold">新規医師登録</h1>
+    <a href="/html/adminDashboard.html" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">← 戻る</a>
+  </header>
+
+  <!-- ===== FORM ===== -->
+  <main class="max-w-3xl mx-auto mt-8 p-6 bg-white rounded shadow space-y-6">
+
+    <!-- 基本情報 -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="block mb-1">姓 (last)</label>
+        <input id="lastName" type="text" placeholder="佐藤"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">名 (first)</label>
+        <input id="firstName" type="text" placeholder="太郎"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">ユーザー名</label>
+        <input id="username" type="text" placeholder="doctorUser11"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">パスワード</label>
+        <input id="password" type="password" placeholder="docpass11"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">専門</label>
+        <input id="specialty" type="text" placeholder="小児科"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">電話番号</label>
+        <input id="phone" type="text" placeholder="090-1234-5678"
+               class="w-full border px-3 py-2 rounded" required>
+      </div>
+      <div>
+        <label class="block mb-1">クリニック</label>
+        <select id="clinicSelect" class="w-full border px-3 py-2 rounded" required>
+          <option value="1">中央クリニック</option>
+          <option value="2">西区クリニック</option>
+          <option value="3">東区クリニック</option>
+          <option value="4">南区クリニック</option>
+          <option value="5">北区クリニック</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- 利用可能時間 登録エリア -->
+    <section>
+      <h2 class="text-lg font-semibold mb-2">診療可能時間</h2>
+      <div class="flex flex-wrap gap-4 items-end mb-4">
+        <input id="avDate" type="date"
+               class="border px-3 py-2 rounded">
+        <input id="avTime" type="time"
+               class="border px-3 py-2 rounded">
+        <button id="addAvBtn"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+          追加
+        </button>
+      </div>
+      <ul id="avList" class="list-disc pl-5 space-y-1 text-gray-800"></ul>
+    </section>
+
+    <!-- SUBMIT -->
+    <button id="submitBtn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded text-lg font-semibold">
+      医師を登録する
+    </button>
+  </main>
+
+  <!-- ===== SCRIPT ===== -->
+  <script>
+    const times = [];                      // 追加済み start 時刻を保持
+    const avList = document.getElementById("avList");
+
+    /* ---- 追加ボタン ---- */
+    document.getElementById("addAvBtn").onclick = () => {
+      const d = document.getElementById("avDate").value;
+      const t = document.getElementById("avTime").value;
+      if (!d || !t) { alert("日付と開始時刻を選択してください"); return; }
+      const slot = `${d} ${t}`;
+      if (times.includes(slot)) { alert("すでに追加済みです"); return; }
+      times.push(slot);
+      renderTimes();
+    };
+
+    function renderTimes() {
+      avList.innerHTML = "";
+      times.forEach((s, idx) => {
+        const li = document.createElement("li");
+        li.innerHTML = `${s}
+          <button class="ml-2 text-sm text-red-600"
+                  onclick="removeTime(${idx})">削除</button>`;
+        avList.appendChild(li);
+      });
+    }
+    window.removeTime = idx => { times.splice(idx,1); renderTimes(); };
+
+    /* ---- 送信 ---- */
+    document.getElementById("submitBtn").onclick = async () => {
+      if (times.length === 0 &&
+          !confirm("診療可能時間が 1 件も追加されていません。登録を続けますか？")) return;
+
+      const payload = {
+        specialty    : document.getElementById("specialty").value.trim(),
+        phone        : document.getElementById("phone").value.trim(),
+        clinicLocation : { id: Number(document.getElementById("clinicSelect").value) },
+        availableTimes : times,
+        user : {
+          username     : document.getElementById("username").value.trim(),
+          passwordHash : document.getElementById("password").value.trim(),
+          role         : "ROLE_DOCTOR",                 // ← 自動固定
+          fullName     : `${document.getElementById("lastName").value.trim()} `
+                       + `${document.getElementById("firstName").value.trim()}`
+        }
+      };
+
+      const token = localStorage.getItem("token");
+      const res = await fetch("/doctor", {
+        method : "POST",
+        headers: {
+          "Content-Type" : "application/json",
+          Authorization  : "Bearer " + token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("登録が完了しました");
+        location.href = "/html/adminDashboard.html";
+      } else {
+        const err = await res.json();
+        alert(err.error || "登録に失敗しました");
+      }
+    };
+  </script>
+</body>
+</html>

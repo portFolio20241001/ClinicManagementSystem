@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Clinic – Availability</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="bg-blue-900 text-white p-4 flex justify-between items-center shadow-md">
+    <h1 class="text-xl font-bold">Smart Clinic – Doctor Dashboard</h1>
+    
+  <div class="space-x-4 text-sm">
+    <a href="/html/doctorDashboard.html" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow inline-block">
+    	予約一覧
+    </a>
+    <button id="logoutBtn"
+            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow">ログアウト</button>
+  </div>
+</header>
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<main class="max-w-3xl mx-auto bg-white mt-10 p-8 rounded shadow">
+
+  <!-- 追加フォーム -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <input id="dateInput" type="date" class="border rounded px-3 py-2 flex-1 min-w-[120px]">
+    <input id="timeInput" type="time" class="border rounded px-3 py-2 flex-1 min-w-[120px]">
+    <button id="addBtn"
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow">
+      追加
+    </button>
+  </div>
+
+  <!-- 一覧 -->
+  <table class="w-full table-auto border border-gray-300 text-base">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border px-4 py-2">日時</th>
+        <th class="border px-4 py-2 text-center">操作</th>
+      </tr>
+    </thead>
+    <tbody id="timeBody"></tbody>
+  </table>
+</main>
+
+<!-- ── SCRIPT ────────────────────────────────────────────── -->
+<script>
+/* === 共通値 === */
+const token  = localStorage.getItem("token");
+const header = { "Authorization": "Bearer " + token,
+                 "Content-Type": "application/json" };
+
+/* === 初期ロード === */
+document.addEventListener("DOMContentLoaded", loadTimes);
+
+/* === 一覧取得 === */
+async function loadTimes(){
+  const res = await fetch("/doctor/available-times", { headers: header });
+  if (!res.ok){ alert("取得に失敗しました"); return; }
+  const { availableTimes = [] } = await res.json();
+  // 日付昇順で並べ替え
+  availableTimes.sort((a,b) => new Date(a) - new Date(b));
+  renderTable(availableTimes);
+}
+
+/* === 表描画 === */
+function renderTable(list){
+  const tbody = document.getElementById("timeBody");
+  tbody.innerHTML = "";
+  if(list.length === 0){
+    tbody.innerHTML =
+      `<tr><td colspan="2" class="text-center py-6 text-gray-500">
+         予約可能時間が登録されていません
+       </td></tr>`;
+    return;
+  }
+
+  list.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="border px-4 py-2">${t}</td>
+      <td class="border px-4 py-2">
+        <div class="flex justify-center gap-3"> <!-- 中央寄せ -->
+          <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-5 py-1 rounded"
+                  onclick="startEdit('${t}')">変更</button>
+          <button class="bg-red-500 hover:bg-red-600 text-white px-5 py-1 rounded"
+                  onclick="deleteTime('${t}')">削除</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* === 追加 === */
+addBtn.onclick = async () => {
+  const d = dateInput.value, t = timeInput.value;
+  if(!d || !t){ alert("日付と時刻を入力してください"); return; }
+  const payload = JSON.stringify({ time: `${d} ${t}` });
+
+  const res = await fetch("/doctor/available-times", {
+    method : "POST", headers: header, body: payload
+  });
+  if(res.ok){ loadTimes(); dateInput.value = timeInput.value = ""; }
+  else alert((await res.json()).error || "追加失敗");
+};
+
+/* === 削除 === */
+async function deleteTime(str){
+  if(!confirm(`${str} を削除しますか？`)) return;
+  const res = await fetch("/doctor/available-times", {
+    method:"DELETE", headers: header, body: JSON.stringify({ time:str })
+  });
+  if(res.ok) loadTimes(); else alert("削除失敗");
+}
+
+/* === 変更（旧→新） === */
+function startEdit(oldStr){
+  const when = prompt("新しい日時を YYYY-MM-DD HH:mm 形式で入力", oldStr);
+  if(!when || when === oldStr) return;
+
+  fetch("/doctor/available-times", {
+    method :"PUT",
+    headers: header,
+    body   : JSON.stringify({ oldTime: oldStr, newTime: when })
+  })
+  .then(r => r.ok ? loadTimes() : r.json().then(e=>Promise.reject(e.error)))
+  .catch(err => alert(err || "更新失敗"));
+}
+
+/* === logout === */
+logoutBtn.onclick = () => { localStorage.clear(); location.href="/login"; };
+</script>
+</body>
+</html>

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.project.back_end.DTO.DoctorAvailabilityDTO;
 //import com.project.back_end.DTO.Login;			//　SpringSecurity対応により廃止
 import com.project.back_end.Entity.Doctor;
 import com.project.back_end.Security.C_JwtService_B;
@@ -36,6 +37,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -170,7 +172,7 @@ public class DoctorController {
      * 2) すべての医師を取得
      * ===================================================================*/
     @Operation(
-    	    summary = "全ての医師を取得( by Patient )",
+    	    summary = "全ての医師を取得( by Patient、Admin )",
     	    description = "登録されている医師レコードをすべて返します。",
     	    parameters = {
     	            @Parameter(
@@ -190,26 +192,74 @@ public class DoctorController {
     	                examples = @ExampleObject(value = """
     	                    {
     	                      "doctors": [
-    	                        {
-    	                          "id": 2,
-    	                          "specialty": "心臓内科",
-    	                          "phone": "080-1111-0002",
-    	                          "clinicLocation": {
-    	                            "id": 1,
-    	                            "name": "中央クリニック"
-    	                          }
-    	                        },
-    	                        {
-    	                          "id": 3,
-    	                          "specialty": "神経内科",
-    	                          "phone": "080-1111-0003",
-    	                          "clinicLocation": {
-    	                            "id": 1,
-    	                            "name": "中央クリニック"
-    	                          }
-    	                        }
-    	                      ]
-    	                    }""")
+							        {
+							            "id": 2,
+							            "user": {
+							                "id": 2,
+							                "username": "doctorUser1",
+							                "role": "ROLE_DOCTOR",
+							                "fullName": "鈴木 花子",
+							                "admin": null,
+							                "doctor": 2,
+							                "patient": null,
+							                "createdAt": "2025-06-10T18:13:25"
+							            },
+							            "clinicLocation": {
+							                "id": 1,
+							                "name": "中央クリニック",
+							                "address": "東京都中央区1-1-1",
+							                "phone": "03-1234-5678"
+							            },
+							            "specialty": "心臓内科",
+							            "phone": "080-1111-0002",
+							            "availableTimes": [
+							                "2025-06-11 14:00",
+							                "2025-09-18 09:00",
+							                "2025-09-18 10:00",
+							                "2025-09-18 11:00",
+							                "2025-07-01 09:00",
+							                "2025-07-01 10:00",
+							                "2025-07-01 11:00",
+							                "2025-07-02 14:00",
+							                "2025-07-02 15:00",
+							                "2025-06-30 10:00",
+							                "2025-06-23 09:00",
+							                "2025-06-23 23:00",
+							                "2025-06-25 19:00"
+							            ],
+							            "createdAt": "2025-06-10T19:09:06"
+							        },
+							        {
+							            "id": 3,
+							            "user": {
+							                "id": 3,
+							                "username": "doctorUser2",
+							                "role": "ROLE_DOCTOR",
+							                "fullName": "佐藤 次郎",
+							                "admin": null,
+							                "doctor": 3,
+							                "patient": null,
+							                "createdAt": "2025-06-10T18:13:25"
+							            },
+							            "clinicLocation": {
+							                "id": 1,
+							                "name": "中央クリニック",
+							                "address": "東京都中央区1-1-1",
+							                "phone": "03-1234-5678"
+							            },
+							            "specialty": "神経内科",
+							            "phone": "080-1111-0003",
+							            "availableTimes": [
+							                "2025-06-11 09:30",
+							                "2025-06-11 10:30",
+							                "2025-06-11 11:30",
+							                "2025-06-11 15:00",
+							                "2025-09-18 10:00"
+							            ],
+							            "createdAt": "2025-06-10T19:09:06"
+							        }
+							    ]
+							}""")
     	            )
     	        ),
     	        @ApiResponse(
@@ -229,7 +279,7 @@ public class DoctorController {
 
 
     @GetMapping
-    @PreAuthorize("hasRole('PATIENT')")
+    @PreAuthorize("hasAnyRole('PATIENT','ADMIN')")		// 	SpringSecurity対応により追加
     public ResponseEntity<Map<String, Object>> getDoctors() {
     	
     	log.info("★ GET /doctor  全医師取得リクエスト受信");
@@ -238,6 +288,136 @@ public class DoctorController {
         return doctorService.getDoctors();
         
     }
+    
+    
+    
+    
+    
+ // …/controller/DoctorController.java
+    @Operation(
+        summary     = "doctorIdに紐づく医師詳細を取得(by Patient)",
+        description = "doctorId を指定して単一の医師情報（ユーザー情報・クリニック情報・診療可能時間を含む）を返します。。",
+        parameters  = {
+            @Parameter(name = "doctorId", in = ParameterIn.PATH, description = "医師 ID", required = true,
+                       example = "2")
+        }
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description  = "取得成功",
+            content      = @Content(mediaType = "application/json",
+            examples = @ExampleObject(value = """
+									            {
+									              "doctor": [
+												        {
+												            "id": 2,
+												            "user": {
+												                "id": 2,
+												                "username": "doctorUser1",
+												                "role": "ROLE_DOCTOR",
+												                "fullName": "鈴木 花子",
+												                "admin": null,
+												                "doctor": 2,
+												                "patient": null,
+												                "createdAt": "2025-06-10T18:13:25"
+												            },
+												            "clinicLocation": {
+												                "id": 1,
+												                "name": "中央クリニック",
+												                "address": "東京都中央区1-1-1",
+												                "phone": "03-1234-5678"
+												            },
+												            "specialty": "心臓内科",
+												            "phone": "080-1111-0002",
+												            "availableTimes": [
+												                "2025-06-11 14:00",
+												                "2025-09-18 09:00",
+												                "2025-09-18 11:00",
+												                "2025-07-01 09:00",
+												                "2025-07-02 14:00",
+												                "2025-07-02 15:00"
+												            ],
+												            "createdAt": "2025-06-10T19:09:06"
+												        }
+												    ]
+												}""")
+									    )
+									),
+							        @ApiResponse(
+							            responseCode = "404",
+							            description  = "該当 ID が存在しない",
+							            content      = @Content(mediaType = "application/json",
+							                          examples = @ExampleObject(value = "{ \"error\": \"指定 ID の医師は存在しません。\" }"))
+							        )
+    }
+    )
+    
+    
+    
+    
+    @GetMapping("/{doctorId}")
+    @PreAuthorize("hasAnyRole('PATIENT')")
+    public ResponseEntity<?> getDoctorById(@PathVariable Long doctorId) {
+        try {
+            Doctor doctor = doctorService.getDoctorWithRelations(doctorId);
+            return ResponseEntity.ok(Map.of("doctor", List.of(doctor)));   // ← 仕様に合わせて配列で返却
+            
+        } catch (EntityNotFoundException e) {
+        	
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body(Map.of("error", "指定 ID の医師は存在しません。"));
+            
+        }
+    }
+
+    
+    
+    
+    
+    
+ // DoctorController.java
+    @Operation(
+        summary     = "指定日の空き医師リスト（by Patient）",
+        description = "date（yyyy-MM-dd）を指定して、その日に少なくとも 1 つ空き時間が残っている医師一覧を返却します。",
+        parameters  = @Parameter(name = "date", description = "検索対象日 (yyyy-MM-dd)", example = "2025-09-11")
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "取得成功",
+            content = @Content(mediaType = "application/json",
+            examples = @ExampleObject(value =
+            "{\n" +
+            "  \"doctors\": [\n" +
+            "    {\n" +
+            "      \"id\"            : 2,\n" +
+            "      \"fullName\"      : \"鈴木 花子\",\n" +
+            "      \"specialty\"     : \"心臓内科\",\n" +
+            "      \"clinicLocation\": {\"id\":1,\"name\":\"中央クリニック\"},\n" +
+            "      \"availableTimes\": [\"2025-09-11 11:00\", \"2025-09-11 15:00\"]\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}")))
+    })
+    @GetMapping("/availability/{date}")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<?> getDoctorsAvailableOn(
+            @PathVariable  LocalDate date) {
+    	
+    	System.out.println("date:"+date);
+
+        List<DoctorAvailabilityDTO> list = doctorService.findDoctorsAvailableOn(date);
+
+        return ResponseEntity.ok(Map.of("doctors", list));
+    }
+
+ 
+    
+    
+    
+    
+    
+    
+    
 
     /* =====================================================================
      * 3) 医師登録（Admin）
@@ -1112,6 +1292,8 @@ public class DoctorController {
             return ResponseEntity.ok(Map.of("message", "利用可能時間を削除しました。"));
             
         } catch (IllegalArgumentException e) {
+        	
+        	System.out.println(e.getMessage());
         	
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
             

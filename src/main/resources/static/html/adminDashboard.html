@@ -1,181 +1,147 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Smart Clinic - Admin Dashboard</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f6f9;
-    }
-
-    header {
-      background-color: #1e3a8a;
-      color: white;
-      padding: 1rem 2rem;
-      font-size: 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      background-color: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    h2 {
-      color: #1e40af;
-      margin-bottom: 1rem;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 1rem;
-    }
-
-    th, td {
-      border: 1px solid #d1d5db;
-      padding: 0.75rem;
-      text-align: left;
-    }
-
-    th {
-      background-color: #e5e7eb;
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #cbd5e0;
-      border-radius: 4px;
-    }
-
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      color: white;
-      background-color: #2563eb;
-      cursor: pointer;
-      margin-right: 0.5rem;
-    }
-
-    .btn-danger {
-      background-color: #dc2626;
-    }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
-<body>
-  <header>
-    Smart Clinic Admin Dashboard
-    <button onclick="logout()" class="btn btn-danger">ログアウト</button>
+<body class="bg-gray-100 font-sans">
+  <!-- ───────── ヘッダー ───────── -->
+  <header class="bg-blue-900 text-white p-4 flex justify-between items-center shadow">
+    <h1 class="text-xl font-bold">Smart Clinic Admin Dashboard</h1>
+    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">ログアウト</button>
   </header>
 
-  <div class="container">
-    <h2>医師管理</h2>
+  <!-- ───────── メイン ───────── -->
+  <main class="max-w-6xl mx-auto mt-8 p-6 bg-white rounded shadow">
 
-    <div class="form-group">
-      <label for="doctorName">医師名</label>
-      <input type="text" id="doctorName">
+    <!-- タイトル & 新規 -->
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-blue-800">医師一覧</h2>
+      <a href="/html/doctorCreate.html"
+         class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow">新規医師登録</a>
     </div>
-    <div class="form-group">
-      <label for="specialty">専門</label>
-      <input type="text" id="specialty">
+
+    <!-- 🔍 検索フォーム -->
+    <div class="flex flex-wrap gap-4 mb-6">
+      <input id="nameFilter" type="text" placeholder="医師名で検索"
+             class="flex-1 min-w-[160px] border rounded px-3 py-2"
+      />
+      <input id="specFilter" type="text" placeholder="専門で検索"
+             class="flex-1 min-w-[160px] border rounded px-3 py-2"
+      />
+      <button id="searchBtn"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">検索</button>
+      <button id="resetBtn"
+              class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">リセット</button>
     </div>
-    <div class="form-group">
-      <label for="phone">電話番号</label>
-      <input type="text" id="phone">
+
+    <!-- テーブル -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full table-auto border border-gray-300 text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-4 py-2 border">医師名</th>
+            <th class="px-4 py-2 border">専門</th>
+            <th class="px-4 py-2 border">電話番号</th>
+            <th class="px-4 py-2 border">クリニック</th>
+            <th class="px-4 py-2 border">操作</th>
+          </tr>
+        </thead>
+        <tbody id="doctorTableBody" class="text-gray-700"></tbody>
+      </table>
     </div>
-    <div class="form-group">
-      <label for="clinic">クリニック</label>
-      <input type="text" id="clinic">
-    </div>
-    <button class="btn" onclick="addDoctor()">追加</button>
+  </main>
 
-    <table>
-      <thead>
-        <tr>
-          <th>医師名</th>
-          <th>専門</th>
-          <th>電話番号</th>
-          <th>クリニック</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="doctorTableBody">
-        <!-- 医師データがここに入る -->
-      </tbody>
-    </table>
-  </div>
-
-
-
+  <!-- ───────── スクリプト ───────── -->
   <script>
+    const tbody = document.getElementById("doctorTableBody");
+    const nameInput  = document.getElementById("nameFilter");
+    const specInput  = document.getElementById("specFilter");
+    const searchBtn = document.getElementById("searchBtn");
+    const resetBtn  = document.getElementById("resetBtn");
+
+    let doctorsCache = [];   // ← 一度取得したデータを保持
+
+    /* ---------------- 初期ロード ---------------- */
     async function fetchDoctors() {
       const token = localStorage.getItem("token");
-      const res = await fetch("/doctor", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const res   = await fetch("/doctor", { headers: { Authorization: "Bearer " + token } });
+      if (!res.ok) { alert("医師一覧の取得に失敗しました"); return; }
+      const data  = await res.json();
+      doctorsCache = data.doctors ?? [];
+      renderTable(doctorsCache);
+    }
 
-      const tbody = document.getElementById("doctorTableBody");
+    /* ---------------- テーブル描画 ---------------- */
+    function renderTable(list) {
       tbody.innerHTML = "";
-
-      data.doctors.forEach(doctor => {
+      if (list.length === 0) {
+        tbody.innerHTML =
+          `<tr><td colspan="5" class="text-center py-6 text-gray-500">該当する医師が見つかりません。</td></tr>`;
+        return;
+      }
+      list.forEach(d => {
         const tr = document.createElement("tr");
+        tr.className = "hover:bg-gray-50";
         tr.innerHTML = `
-          <td>${doctor.user?.fullName || "未登録"}</td>
-          <td>${doctor.specialty || "未設定"}</td>
-          <td>${doctor.phone || "不明"}</td>
-          <td>${doctor.clinicLocation?.name || "未設定"}</td>
-          <td>
-            <button class="btn" onclick="editDoctor(${doctor.id})">更新</button>
-            <button class="btn btn-danger" onclick="deleteDoctor(${doctor.id})">削除</button>
-          </td>
-        `;
+          <td class="border px-4 py-2">${d.user?.fullName ?? "未登録"}</td>
+          <td class="border px-4 py-2">${d.specialty       ?? "未設定"}</td>
+          <td class="border px-4 py-2">${d.phone           ?? "不明"}</td>
+          <td class="border px-4 py-2">${d.clinicLocation?.name ?? "未設定"}</td>
+          <td class="border px-4 py-2 space-x-2">
+            <a href="/html/doctorDetail.html?id=${d.id}"
+               class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded">詳細</a>
+            <a href="/html/doctorEdit.html?id=${d.id}"
+               class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">更新</a>
+            <button onclick="deleteDoctor(${d.id})"
+                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">削除</button>
+          </td>`;
         tbody.appendChild(tr);
       });
     }
 
-    function addDoctor() {
-      // 入力された値を使ってAPIへPOSTする処理を書く
-      alert("追加処理を書く必要があります");
+    /* ---------------- フィルター ---------------- */
+    function applyFilter() {
+      const nameKey = nameInput.value.trim();
+      const specKey = specInput.value.trim();
+      const filtered = doctorsCache.filter(d => {
+        const nameMatch = !nameKey || (d.user?.fullName ?? "").includes(nameKey);
+        const specMatch = !specKey || (d.specialty      ?? "").includes(specKey);
+        return nameMatch && specMatch;
+      });
+      renderTable(filtered);
     }
 
-    function editDoctor(id) {
-      alert("医師ID " + id + " の更新処理を書く必要があります");
+    /* ---------------- 削除 ---------------- */
+    async function deleteDoctor(id) {
+      if (!confirm("この医師を削除してもよろしいですか？")) return;
+      const token = localStorage.getItem("token");
+      const res   = await fetch(`/doctor/${id}`, { method:"DELETE",
+                          headers:{ Authorization:"Bearer " + token } });
+      if (res.ok) {
+        alert("削除に成功しました。");
+        // キャッシュからも削除
+        doctorsCache = doctorsCache.filter(d => d.id !== id);
+        applyFilter();
+      } else {
+        alert("削除に失敗しました。");
+      }
     }
 
-    function deleteDoctor(id) {
-      alert("医師ID " + id + " の削除処理を書く必要があります");
-    }
-
+    /* ---------------- ログアウト ---------------- */
     function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
+      localStorage.clear();
       location.href = "/login";
     }
 
-    window.onload = fetchDoctors;
+    /* ---------------- イベント ---------------- */
+    document.addEventListener("DOMContentLoaded", fetchDoctors);
+    searchBtn.addEventListener("click", applyFilter);
+    resetBtn.addEventListener("click", () => { nameInput.value = specInput.value = ""; renderTable(doctorsCache); });
+    // Enter キーで即検索
+    [nameInput, specInput].forEach(inp => inp.addEventListener("keyup", e => { if (e.key === "Enter") applyFilter(); }));
   </script>
-  
-  
 </body>
 </html>
