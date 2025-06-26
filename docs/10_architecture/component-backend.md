@@ -30,7 +30,7 @@ flowchart TD
     controller -->|calls| service
     security -- filters --> controller
     security -- "・token認証しROLE取得
-                ・POST /loginでJWT発行
+                ・POST /api/auth/loginでJWT発行
     （jwtAuthFilter, UserDetailsService,　jwtService）" --> service
 
     service --> repoJpa
