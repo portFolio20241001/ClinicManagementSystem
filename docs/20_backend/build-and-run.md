@@ -84,19 +84,18 @@ docker compose up -d --build
 | 役割              | URL                                                                            |
 | --------------- | ------------------------------------------------------------------------------ |
 | フロント SPA        | [http://localhost:8080/](http://localhost:8080/)                               |
-| Swagger UI      | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) |
-| Actuator Health | [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health) |
+| Swagger UI      | [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html) |
 
 ---
 
-## 7. 主要環境変数
+## 7. 主要環境変数(docker-compose.ymlより)
 
 | 変数                       | 既定値        | 説明               |
 | ------------------------ | ---------- | ---------------- |
 | `MYSQL_ROOT_PASSWORD`    | `root`     | MySQL root パスワード |
 | `MYSQL_DATABASE`         | `clinic`   | 初期 DB 名          |
 | `SPRING_PROFILES_ACTIVE` | `dev`      | Spring プロファイル    |
-| `JWT_SECRET`             | `changeme` | JWT 署名キー         |
+| `JWT_SECRET`             | `A0b1C2d3E4f5G6h7I8j9K0l1M2n3O4p5A0b1C2d3E4f5G6h7I8j9K0l1M2n3O4p5` | JWT 署名キー         |
 
 `.env` を編集後は `docker compose up -d --build` で反映してください。
 
