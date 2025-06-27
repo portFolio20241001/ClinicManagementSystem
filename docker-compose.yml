@@ -3,7 +3,7 @@ version: "3.9"               # ← condition を使うなら 3.9 以上
 x-common-env: &common-env     # 共通環境変数
   TZ: Asia/Tokyo
   SPRING_PROFILES_ACTIVE: dev
-  JWT_SECRET: dev-secret
+  JWT_SECRET: A0b1C2d3E4f5G6h7I8j9K0l1M2n3O4p5A0b1C2d3E4f5G6h7I8j9K0l1M2n3O4p5
 
 services:
 #──────────────────────────── MySQL ────────────────────────────

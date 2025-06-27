@@ -1,28 +1,20 @@
-##################################################################
-# ❶ ビルド用ステージ（Maven） ――――――――――――――――――――――――――――――――――――――
-##################################################################
-FROM maven:3.9.7-eclipse-temurin-21 AS build
-
-WORKDIR /workspace
-COPY pom.xml .
-# 依存キャッシュ用のダミービルド
-RUN mvn -B -q dependency:go-offline -Dmaven.test.skip
-COPY src ./src
-RUN mvn -B -DskipTests spring-boot:repackage             \
-    && cp target/*-SNAPSHOT.jar app.jar                  \
-    && echo "🏗️  Build done!"
-
-##################################################################
-# ❷ 実行用ステージ（スリム JRE） ―――――――――――――――――――――――――――――――――
-##################################################################
-FROM eclipse-temurin:21-jre
-
-# --- 任意: プロファイル & JVM オプションを環境変数で注入 ----------------
-ENV SPRING_PROFILES_ACTIVE=prod \
-    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+# Step 1: Use Maven with JDK 17 to build the app
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
-COPY --from=build /workspace/app.jar app.jar
+
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+# Step 2: Use lightweight JRE 17 for running the app
+FROM eclipse-temurin:17.0.15_6-jre
+
+WORKDIR /app
+
+COPY --from=builder /app/target/back-end-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8080
 
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
