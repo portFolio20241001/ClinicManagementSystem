@@ -83,8 +83,11 @@ public class Patient {
      * - 正規表現で XXX-XXXX-XXXX 形式を検証
      */
     @NotNull(message = "電話番号は必須です。")
-    @Pattern(regexp = "^\\d{3}-\\d{4}-\\d{4}$", message = "電話番号はXXX-XXXX-XXXXの形式で入力してください。")
-    @Column(length = 13) // varchar(13)で指定
+    @Pattern(
+        regexp = "^0\\d{1,3}-\\d{3,4}-\\d{4}$",
+        message = "電話番号は 0XX-XXX(X)-XXXX の形式で入力してください。"
+    )
+    @Column(length = 13)   // varchar(13)
     private String phone;
     
 

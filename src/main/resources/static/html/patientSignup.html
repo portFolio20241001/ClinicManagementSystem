@@ -51,6 +51,8 @@
         <div>
           <label class="block mb-1 font-medium">電話番号</label>
           <input id="phone" class="border rounded px-3 py-2 w-full" placeholder="090-1234-5678" required>
+          <!-- エラーメッセージ挿入用 -->
+          <p id="phoneError" class="text-red-600 text-sm mt-1 hidden"></p>
         </div>
         <div>
           <label class="block mb-1 font-medium">生年月日</label>
@@ -82,9 +84,19 @@
   <!-- SCRIPT -->
   <script>
     const form = document.getElementById("signupForm");
+    const phoneInput = document.getElementById("phone");
+    const phoneError = document.getElementById("phoneError");
 
-    form.addEventListener("submit", async e=>{
+    function clearErrors() {
+      // 電話番号エラーと枠線をクリア
+      phoneError.textContent = "";
+      phoneError.classList.add("hidden");
+      phoneInput.classList.remove("border-red-500", "ring-1", "ring-red-500");
+    }
+
+    form.addEventListener("submit", async e => {
       e.preventDefault();
+      clearErrors();
 
       const body = {
         user : {
@@ -99,23 +111,35 @@
         gender      : gender.value
       };
 
-      console.log("[API] POST /patient", body);
-
-      try{
-        const res = await fetch("/patient",{
-          method :"POST",
-          headers:{ "Content-Type":"application/json" },
-          body   : JSON.stringify(body)
+      try {
+        const res = await fetch("/patient", {
+          method  : "POST",
+          headers : { "Content-Type":"application/json" },
+          body    : JSON.stringify(body)
         });
 
-        if(res.ok){
+        if (res.ok) {
           alert("登録が完了しました！ ログインしてください。");
           location.href = "/";
-        }else{
-          const err = await res.json();
-          alert(err.error || "登録に失敗しました");
+          return;
         }
-      }catch{ alert("サーバーに接続できませんでした"); }
+
+        // エラー処理
+        const err = await res.json();
+        const msg = err.message || err.error || "";
+
+        // 「電話番号は…」が含まれる場合だけインライン表示
+        if (msg.includes("電話番号")) {
+          phoneError.textContent = msg;
+          phoneError.classList.remove("hidden");
+          phoneInput.classList.add("border-red-500", "ring-1", "ring-red-500");
+        } else {
+          // その他はアラート
+          alert(msg || "登録に失敗しました");
+        }
+      } catch (_) {
+        alert("サーバーに接続できませんでした");
+      }
     });
   </script>
 </body>
