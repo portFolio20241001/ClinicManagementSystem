@@ -22,36 +22,36 @@
       <div>
         <label class="block mb-1">姓 (last)</label>
         <input id="lastName" type="text" placeholder="佐藤"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">名 (first)</label>
         <input id="firstName" type="text" placeholder="太郎"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">ユーザー名</label>
         <input id="username" type="text" placeholder="doctorUser11"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">パスワード</label>
         <input id="password" type="password" placeholder="docpass11"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">専門</label>
         <input id="specialty" type="text" placeholder="小児科"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">電話番号</label>
         <input id="phone" type="text" placeholder="090-1234-5678"
-               class="w-full border px-3 py-2 rounded" required>
+               class="w-full border px-3 py-2 rounded">
       </div>
       <div>
         <label class="block mb-1">クリニック</label>
-        <select id="clinicSelect" class="w-full border px-3 py-2 rounded" required>
+        <select id="clinicSelect" class="w-full border px-3 py-2 rounded">
           <option value="1">中央クリニック</option>
           <option value="2">西区クリニック</option>
           <option value="3">東区クリニック</option>
@@ -65,10 +65,8 @@
     <section>
       <h2 class="text-lg font-semibold mb-2">診療可能時間</h2>
       <div class="flex flex-wrap gap-4 items-end mb-4">
-        <input id="avDate" type="date"
-               class="border px-3 py-2 rounded">
-        <input id="avTime" type="time"
-               class="border px-3 py-2 rounded">
+        <input id="avDate" type="date" class="border px-3 py-2 rounded">
+        <input id="avTime" type="time" class="border px-3 py-2 rounded">
         <button id="addAvBtn"
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
           追加
@@ -86,18 +84,18 @@
 
   <!-- ===== SCRIPT ===== -->
   <script>
-    const times = [];                      // 追加済み start 時刻を保持
+    /* ----------------  追加済み診療時間スロット  ---------------- */
+    const times  = [];
     const avList = document.getElementById("avList");
 
-    /* ---- 追加ボタン ---- */
     document.getElementById("addAvBtn").onclick = () => {
       const d = document.getElementById("avDate").value;
       const t = document.getElementById("avTime").value;
       if (!d || !t) { alert("日付と開始時刻を選択してください"); return; }
+
       const slot = `${d} ${t}`;
       if (times.includes(slot)) { alert("すでに追加済みです"); return; }
-      times.push(slot);
-      renderTimes();
+      times.push(slot); renderTimes();
     };
 
     function renderTimes() {
@@ -112,8 +110,60 @@
     }
     window.removeTime = idx => { times.splice(idx,1); renderTimes(); };
 
-    /* ---- 送信 ---- */
+    /* ----------------  バリデーション用ユーティリティ  ---------------- */
+    const fieldMap = {
+      "専門分野"  : "specialty",
+      "電話番号"  : "phone",
+      "ユーザー名": "username",
+      "姓"        : "lastName",
+      "名"        : "firstName",
+      "パスワード": "password"
+    };
+
+    function clearValidation() {
+      document.querySelectorAll("input, select").forEach(el =>
+        el.classList.remove("border-red-500", "ring-1", "ring-red-500"));
+      document.querySelectorAll(".error-message").forEach(el => el.remove());
+    }
+
+    function showError(fieldId, message) {
+      const input = document.getElementById(fieldId);
+      if (!input) return;
+      input.classList.add("border-red-500", "ring-1", "ring-red-500");
+
+      let msgEl = input.parentNode.querySelector(".error-message");
+      if (!msgEl) {
+        msgEl = document.createElement("p");
+        msgEl.className = "error-message text-red-600 text-sm mt-1";
+        input.parentNode.appendChild(msgEl);
+      }
+      msgEl.textContent = message;
+    }
+
+    /* 必須 6 項目を事前チェック（空欄なら赤枠＋メッセ） */
+    function checkRequired() {
+      const required = {
+        lastName : "姓は必須です。",
+        firstName: "名は必須です。",
+        username : "ユーザー名は必須です。",
+        password : "パスワードは必須です。",
+        specialty: "専門分野は必須です。",
+        phone    : "電話番号は必須です。"
+      };
+      let ok = true;
+      for (const [id, message] of Object.entries(required)) {
+        if (document.getElementById(id).value.trim()) continue;
+        showError(id, message); ok = false;
+      }
+      return ok;
+    }
+
+    /* ----------------  送信 ---------------- */
     document.getElementById("submitBtn").onclick = async () => {
+      clearValidation();
+
+      if (!checkRequired()) return;
+
       if (times.length === 0 &&
           !confirm("診療可能時間が 1 件も追加されていません。登録を続けますか？")) return;
 
@@ -125,9 +175,9 @@
         user : {
           username     : document.getElementById("username").value.trim(),
           passwordHash : document.getElementById("password").value.trim(),
-          role         : "ROLE_DOCTOR",                 // ← 自動固定
-          fullName     : `${document.getElementById("lastName").value.trim()} `
-                       + `${document.getElementById("firstName").value.trim()}`
+          role         : "ROLE_DOCTOR",
+          fullName     : `${document.getElementById("lastName").value.trim()} ` +
+                         `${document.getElementById("firstName").value.trim()}`
         }
       };
 
@@ -144,10 +194,21 @@
       if (res.ok) {
         alert("登録が完了しました");
         location.href = "/html/adminDashboard.html";
-      } else {
-        const err = await res.json();
-        alert(err.error || "登録に失敗しました");
+        return;
       }
+
+      /* ---------- 登録失敗（サーバーバリデーション） ---------- */
+      const err = await res.json();
+      const msg = err.error || err.message || "登録に失敗しました";
+
+      msg.split("/").forEach(part => {
+        part = part.trim();
+        for (const [ja, id] of Object.entries(fieldMap)) {
+          if (part.includes(ja)) { showError(id, part); return; }
+        }
+      });
+
+      if (!document.querySelector(".error-message")) alert(msg);
     };
   </script>
 </body>

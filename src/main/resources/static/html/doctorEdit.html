@@ -182,7 +182,7 @@ editForm.onsubmit = async ev => {
     availableTimes : times,
     user : {
       username     : username.value.trim(),
-      passwordHash : password.value ? password.value.trim() : "dummy",
+      passwordHash : password.value ? password.value.trim() : "",
       role         : "ROLE_DOCTOR",
       fullName     : `${lastName.value.trim()} ${firstName.value.trim()}`
     }

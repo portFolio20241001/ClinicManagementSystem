@@ -17,6 +17,7 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -80,6 +81,7 @@ public class Doctor {
     /**
      * Userエンティティとの1対1の関連。
      */
+    @Valid                    // ←★これを追加
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "id")
@@ -109,9 +111,13 @@ public class Doctor {
      * - 正規表現で XXX-XXXX-XXXX 形式を検証
      */
     @NotNull(message = "電話番号は必須です。")
-    @Pattern(regexp = "^\\d{3}-\\d{4}-\\d{4}$", message = "電話番号はXXX-XXXX-XXXXの形式で入力してください。")
-    @Column(length = 13) // varchar(13)で指定
+    @Pattern(
+        regexp = "^0\\d{1,3}-\\d{3,4}-\\d{4}$",
+        message = "電話番号は 0XX-XXX(X)-XXXX の形式で入力してください。"
+    )
+    @Column(length = 13)   // varchar(13)
     private String phone;
+
 
     /**
      * 診療可能時間帯を文字列リストで管理。

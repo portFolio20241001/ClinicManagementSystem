@@ -73,8 +73,18 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
      * @param username ユーザー名
      * @return 該当する {@link Doctor} を含む Optional（存在しない場合は空）
      */
-    @Query("SELECT d FROM Doctor d JOIN FETCH d.user JOIN FETCH d.availableTimes  JOIN FETCH d.clinicLocation WHERE d.user.username = :username")
-    Optional<Doctor> findByUser_Username(String username);
+    /**
+     * username で Doctor を取得（空き時間が 0 件でも必ず返す）
+     */
+    @Query("""
+	    SELECT DISTINCT d
+	        FROM Doctor d
+	        JOIN  FETCH d.user u
+	        LEFT JOIN FETCH d.availableTimes at
+	        LEFT JOIN FETCH d.clinicLocation cl
+	        WHERE u.username = :username
+	    """)
+    Optional<Doctor> findByUser_Username(@Param("username") String username);
 
     
     /**
