@@ -1,0 +1,1701 @@
+openapi: 3.0.1
+info:
+  title: Smart Clinic API
+  description: Spring Boot によるクリニック管理 REST API
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /doctor:
+    get:
+      tags:
+      - doctor-controller
+      summary: 全ての医師を取得( by Patient、Admin )
+      description: 登録されている医師レコードをすべて返します。
+      operationId: getDoctors
+      parameters:
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      responses:
+        "200":
+          description: 医師情報の取得成功
+          content:
+            application/json:
+              example:
+                doctors:
+                - id: 2
+                  user:
+                    id: 2
+                    username: doctorUser1
+                    role: ROLE_DOCTOR
+                    fullName: 鈴木 花子
+                    admin: null
+                    doctor: 2
+                    patient: null
+                    createdAt: 2025-06-10T18:13:25
+                  clinicLocation:
+                    id: 1
+                    name: 中央クリニック
+                    address: 東京都中央区1-1-1
+                    phone: 03-1234-5678
+                  specialty: 心臓内科
+                  phone: 080-1111-0002
+                  availableTimes:
+                  - 2025-06-11 14:00
+                  - 2025-09-18 09:00
+                  - 2025-09-18 10:00
+                  - 2025-09-18 11:00
+                  - 2025-07-01 09:00
+                  - 2025-07-01 10:00
+                  - 2025-07-01 11:00
+                  - 2025-07-02 14:00
+                  - 2025-07-02 15:00
+                  - 2025-06-30 10:00
+                  - 2025-06-23 09:00
+                  - 2025-06-23 23:00
+                  - 2025-06-25 19:00
+                  createdAt: 2025-06-10T19:09:06
+                - id: 3
+                  user:
+                    id: 3
+                    username: doctorUser2
+                    role: ROLE_DOCTOR
+                    fullName: 佐藤 次郎
+                    admin: null
+                    doctor: 3
+                    patient: null
+                    createdAt: 2025-06-10T18:13:25
+                  clinicLocation:
+                    id: 1
+                    name: 中央クリニック
+                    address: 東京都中央区1-1-1
+                    phone: 03-1234-5678
+                  specialty: 神経内科
+                  phone: 080-1111-0003
+                  availableTimes:
+                  - 2025-06-11 09:30
+                  - 2025-06-11 10:30
+                  - 2025-06-11 11:30
+                  - 2025-06-11 15:00
+                  - 2025-09-18 10:00
+                  createdAt: 2025-06-10T19:09:06
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              example:
+                error: 401
+                message: 認証に失敗しました。トークンが無効または期限切れです。
+    put:
+      tags:
+      - doctor-controller
+      summary: 医師情報更新（by Admin）
+      description: 管理者（Admin）が医師情報（電話番号・専門分野・所属クリニックなど）を更新します。JWT 認証が必要です。
+      operationId: updateDoctor
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+            examples:
+              更新例:
+                summary: 医師情報更新（id:28）
+                description: ID 28 の医師（佐藤 花子）の情報を更新する例
+                value:
+                  id: 28
+                  specialty: 産婦人科
+                  phone: 090-1234-5678
+                  clinicLocation:
+                    id: 1
+                  availableTimes:
+                  - 2025-06-20 09:00-10:00
+                  - 2025-06-21 14:00-15:00
+                  user:
+                    username: doctorUser13
+                    passwordHash: docpass13
+                    role: ROLE_DOCTOR
+                    fullName: 佐藤 花子
+        required: true
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              examples:
+                成功レスポンス:
+                  description: 成功レスポンス
+                  value:
+                    message: 医師情報を更新しました。
+        "404":
+          description: 該当 ID が存在しない
+          content:
+            application/json:
+              examples:
+                存在しないID:
+                  description: 存在しないID
+                  value:
+                    error: 指定 ID の医師は存在しません。
+        "500":
+          description: 更新リクエストの異常（ID未指定など）
+          content:
+            application/json:
+              examples:
+                ID未指定エラー:
+                  description: ID未指定エラー
+                  value:
+                    error: Doctor IDを更新するならIDがNULLはダメです。
+        "401":
+          description: 認証失敗。JWTトークンが無効または期限切れです。
+          content:
+            application/json:
+              examples:
+                認証エラー:
+                  description: 認証エラー
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+    post:
+      tags:
+      - doctor-controller
+      summary: 医師登録（by Admin）
+      description: 管理者（Admin）が新しい医師を登録します。JWTトークン認証が必要です。
+      operationId: saveDoctor
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSignature
+      requestBody:
+        description: 登録する医師情報（User、ClinicLocation、availableTimes 含む）
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+            examples:
+              doctorRequest:
+                description: doctorRequest
+                value:
+                  specialty: 小児科
+                  phone: 090-1234-5678
+                  clinicLocation:
+                    id: 1
+                  availableTimes:
+                  - 2025-06-20 09:00-10:00
+                  - 2025-06-21 14:00-15:00
+                  user:
+                    username: doctorUser11
+                    passwordHash: docpass11
+                    role: ROLE_DOCTOR
+                    fullName: 佐藤 太郎
+        required: true
+      responses:
+        "201":
+          description: 登録成功
+          content:
+            application/json:
+              examples:
+                登録成功:
+                  description: 登録成功
+                  value:
+                    message: 医師を登録しました。
+        "409":
+          description: 重複ユーザーあり（username が既に存在）
+          content:
+            application/json:
+              examples:
+                重複ユーザー:
+                  description: 重複ユーザー
+                  value:
+                    error: 同じユーザー名の医師が既に存在します。
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              examples:
+                トークンエラー:
+                  description: トークンエラー
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+  /doctor/available-times:
+    get:
+      tags:
+      - doctor-controller
+      summary: 利用可能時間一覧取得( by Doctor )
+      description: ログイン中の医師の利用可能時間を取得します。
+      operationId: getAvailableTimes
+      parameters:
+      - name: Authorization
+        in: header
+        description: "Bearerトークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        "200":
+          description: 利用可能時間リスト
+          content:
+            application/json:
+              example:
+                availableTimes:
+                - 2025-06-30 09:00
+                - 2025-06-30 10:00
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              example:
+                error: "サーバーエラー: 予期しないエラーが発生しました。"
+        "400":
+          description: 入力値エラーや認証失敗など
+          content:
+            application/json:
+              example:
+                error: 医師IDが不正です。
+    put:
+      tags:
+      - doctor-controller
+      summary: 利用可能時間の更新（by Doctor）
+      description: ログイン中の医師の診療可能時間を更新します。
+      operationId: updateAvailableTime
+      parameters:
+      - name: Authorization
+        in: header
+        description: "Bearerトークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+            example:
+              oldTime: 2025-06-30 09:00
+              newTime: 2025-06-30 10:00
+        required: true
+      responses:
+        "200":
+          description: 利用可能時間を更新しました。
+          content:
+            application/json:
+              example:
+                message: 利用可能時間を更新しました。
+        "400":
+          description: バリデーションエラー（更新元が存在しない・予約済みなど）
+          content:
+            application/json:
+              example:
+                error: 指定された更新元の時間は存在しません。
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              example:
+                error: 　この時間には既に患者予約があります。変更できません。仕事してください。
+    post:
+      tags:
+      - doctor-controller
+      summary: 利用可能時間を追加（by Doctor）
+      description: ログイン中の医師に診療可能時間を追加します。
+      operationId: addAvailableTime
+      parameters:
+      - name: Authorization
+        in: header
+        description: "Bearerトークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+            examples:
+              Add Time Example:
+                description: Add Time Example
+                value:
+                  time: 2025-06-30 09:00
+        required: true
+      responses:
+        "400":
+          description: バリデーションエラー（時間が不正・医師が存在しない・すでに存在する時間の追加）
+          content:
+            application/json:
+              examples:
+                Doctor Not Found:
+                  description: Doctor Not Found
+                  value:
+                    error: 該当する医師が見つかりません。
+                Time Already Exists:
+                  description: Time Already Exists
+                  value:
+                    error: 指定された時間は既に存在します。
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              example:
+                error: ' 予期しない例外が発生しました'
+        "201":
+          description: 利用可能時間を追加しました
+          content:
+            application/json:
+              example:
+                message: 利用可能時間を追加しました。
+    delete:
+      tags:
+      - doctor-controller
+      summary: 利用可能時間の削除( by Doctor )
+      description: ログイン中の医師の利用可能時間を削除します。予約が入っている時間は削除できません。
+      operationId: deleteAvailableTime
+      parameters:
+      - name: Authorization
+        in: header
+        description: "JWTトークン（例: Bearer xxx.yyy.zzz）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+            example:
+              time: 2025-06-30 09:00
+        required: true
+      responses:
+        "200":
+          description: 削除成功
+          content:
+            application/json:
+              example:
+                message: 利用可能時間を削除しました。
+        "400":
+          description: バリデーションエラー（時間が存在しない・形式不正など）
+          content:
+            application/json:
+              examples:
+                時間が存在しない:
+                  description: 時間が存在しない
+                  value:
+                    error: 指定された時間は存在しません。
+                時間形式が不正:
+                  description: 時間形式が不正
+                  value:
+                    error: "時間形式が不正です。正しい形式（例: 2025-06-30 09:00）で指定してください。"
+        "500":
+          description: サーバーエラー
+          content:
+            application/json:
+              example:
+                error: この時間には既に患者予約があります。削除できません。仕事してください。
+  /appointments:
+    put:
+      tags:
+      - appointment-controller
+      summary: 予約時間の更新 (by Patient)
+      description: 患者自身の既存予約を変更します。JWT は Authorization ヘッダーに含めてください。
+      operationId: updateAppointment
+      parameters:
+      - name: Authorization
+        in: header
+        description: JWT トークン（Bearer プレフィックス付き）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig
+      requestBody:
+        description: 更新内容（ID 必須）
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+            examples:
+              更新例:
+                description: 更新例
+                value:
+                  id: 58
+                  doctor:
+                    id: 2
+                  patient:
+                    id: 12
+                  appointmentTime: 2025-09-18T11:00:00
+                  status: 0
+                  payment:
+                    paymentMethod: credit
+                    paymentStatus: Pending
+        required: true
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              example:
+                message: 予約が正常に更新されました。
+        "400":
+          description: バリデーションエラー（ID未指定・医師不在・重複など）
+          content:
+            application/json:
+              examples:
+                ID未指定:
+                  description: ID未指定
+                  value:
+                    error: 予約更新にはIDの指定が必要です。
+                医師ID不正:
+                  description: 医師ID不正
+                  value:
+                    message: 指定した医師が存在しません。
+                予約時間に空きなし:
+                  description: 予約時間に空きなし
+                  value:
+                    message: 指定時間に医師の空きがありません。
+        "401":
+          description: 認証失敗（JWT が無効または期限切れ）
+          content:
+            application/json:
+              example:
+                error: 401
+                message: 認証に失敗しました。トークンが無効または期限切れです。
+    post:
+      tags:
+      - appointment-controller
+      summary: 新規予約作成＋支払い情報（by Patient）
+      description: 患者が医師の空き時間に予約を入れ、必要であれば支払い情報も同時に登録します。JWTトークンはAuthorizationヘッダーに設定してください。
+      operationId: bookAppointment
+      parameters:
+      - name: Authorization
+        in: header
+        description: JWT トークン（Bearer プレフィックス付き）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig
+      requestBody:
+        description: 予約内容（支払い情報は任意）
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+            examples:
+              予約と支払い登録例:
+                description: 予約と支払い登録例
+                value:
+                  doctor:
+                    id: 2
+                  patient:
+                    id: 12
+                  appointmentTime: 2025-09-17T11:00:00
+                  status: 0
+                  payment:
+                    paymentMethod: credit
+                    paymentStatus: Pending
+        required: true
+      responses:
+        "201":
+          description: 予約と支払いが正常に登録されました。
+          content:
+            application/json:
+              example:
+                message: 予約と支払いが正常に登録されました。
+        "400":
+          description: バリデーションエラー / 医師不在・重複予約など
+          content:
+            application/json:
+              examples:
+                医師IDが存在しない:
+                  description: 医師IDが存在しない
+                  value:
+                    message: 指定した医師が存在しません。
+                空き時間なし:
+                  description: 空き時間なし
+                  value:
+                    message: 指定時間に医師の空きがありません。
+        "401":
+          description: トークン検証失敗
+          content:
+            '*/*':
+              example:
+                error: トークンが無効または期限切れです。
+  /prescription:
+    post:
+      tags:
+      - prescription-controller
+      summary: 処方箋を登録する (by Doctor)
+      description: 医師が指定予約（appointmentId）に対して処方箋を登録します。トークンは ROLE_DOCTOR に限定されます。
+      operationId: savePrescription
+      parameters:
+      - name: Authorization
+        in: header
+        description: Bearerトークン（ROLE_DOCTOR）形式：Bearer eyJhbGciOi...
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      requestBody:
+        description: 登録する処方箋情報
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrescriptionForMongo'
+            examples:
+              処方箋登録例:
+                summary: doctorUser1 が予約 1 に対して登録
+                description: 処方箋登録例
+                value:
+                  patientId: "12"
+                  appointmentId: 1
+                  medication: アスピリン
+                  dosage: 100mg
+                  doctorNotes: 1日1回朝食後に服用
+        required: true
+      responses:
+        "201":
+          description: 処方箋の登録に成功した場合のレスポンス
+          content:
+            application/json:
+              examples:
+                成功レスポンス:
+                  description: 成功レスポンス
+                  value:
+                    message: 処方箋が正常に保存されました。
+        "400":
+          description: 既に登録済み、またはバリデーションエラー時
+          content:
+            application/json:
+              examples:
+                重複エラー:
+                  description: 重複エラー
+                  value:
+                    error: すでにこの予約には処方箋が登録されています。
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              examples:
+                認証エラー:
+                  description: 認証エラー
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+  /patient:
+    post:
+      tags:
+      - patient-controller
+      summary: 患者新規登録（サインアップ）
+      description: 重複チェックを行ったうえで新しい患者レコードを作成します。
+      operationId: createPatient
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+            examples:
+              新規患者リクエスト:
+                description: 新規患者リクエスト
+                value:
+                  user:
+                    username: patientUser11
+                    passwordHash: plainPassword
+                    fullName: 高田 海斗
+                    role: ROLE_PATIENT
+                  address: 東京都港区芝公園4-2-8
+                  dateOfBirth: 1994-08-19
+                  gender: male
+                  phone: 080-1234-0022
+        required: true
+      responses:
+        "201":
+          description: 登録成功
+          content:
+            '*/*':
+              example:
+                message: 患者を登録しました。
+        "409":
+          description: 同一ユーザー名または電話番号が既に存在
+          content:
+            '*/*':
+              example:
+                error: このユーザー名または電話番号は既に登録されています。
+        "500":
+          description: 内部エラー（DB 例外など）
+          content:
+            '*/*':
+              example:
+                error: 内部エラーが発生しました。
+  /api/auth/login:
+    post:
+      tags:
+      - login-controller
+      summary: ユーザーのログイン認証を行う（JWTトークン返却　Admin　Patient　Doctor共通）
+      description: ユーザー名とパスワードを受け取り、JWTトークンとユーザーロールを返却します。認証に失敗した場合は401を返します。
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              Admin Login:
+                description: Admin Login
+                value:
+                  username: adminUser1
+                  password: addpass1
+              Doctor Login:
+                description: Doctor Login
+                value:
+                  username: doctorUser1
+                  password: docpass1
+              Patient Login:
+                description: Patient Login
+                value:
+                  username: patientUser1
+                  password: patpass1
+        required: true
+      responses:
+        "200":
+          description: ログイン成功（JWTトークンとロール返却）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                Admin Success:
+                  description: Admin Success
+                  value:
+                    token: eyJhbGciOiJIUzM4NCJ9...
+                    role: ROLE_ADMIN
+                Doctor Success:
+                  description: Doctor Success
+                  value:
+                    token: eyJhbGciOiJIUzM4NCJ9...
+                    role: ROLE_DOCTOR
+                Patient Success:
+                  description: Patient Success
+                  value:
+                    token: eyJhbGciOiJIUzM4NCJ9...
+                    role: ROLE_PATIENT
+        "401":
+          description: 認証失敗
+          content:
+            application/json:
+              example:
+                message: 認証に失敗しました。ユーザー名またはパスワードが正しくありません。
+                error: 401
+  /prescription/{appointmentId}:
+    get:
+      tags:
+      - prescription-controller
+      summary: 処方箋を取得する (by Doctor)
+      description: 指定した予約 ID に紐づく処方箋情報を返します。
+      operationId: getPrescription
+      parameters:
+      - name: appointmentId
+        in: path
+        description: 予約 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      - name: Authorization
+        in: header
+        description: Bearer トークン（ROLE_DOCTOR）形式：Bearer eyJhbGciOi...
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              examples:
+                取得成功レスポンス:
+                  description: 取得成功レスポンス
+                  value:
+                    prescription:
+                      id: 665c0e5b734b0d226e24a1e3
+                      patientId: "12"
+                      appointmentId: 1
+                      medication: アスピリン
+                      dosage: 100mg
+                      doctorNotes: 1日1回朝食後に服用
+        "401":
+          description: 認証失敗。JWTトークンが無効または期限切れです。
+          content:
+            application/json:
+              examples:
+                認証エラー:
+                  description: 認証エラー
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+        "404":
+          description: 指定の予約に対する処方箋が存在しない場合
+          content:
+            application/json:
+              examples:
+                処方箋なし:
+                  description: 処方箋なし
+                  value:
+                    message: 指定の予約に対する処方箋が見つかりません。
+        "500":
+          description: 内部サーバーエラー
+          content:
+            application/json:
+              examples:
+                サーバーエラー:
+                  description: サーバーエラー
+                  value:
+                    error: 処方箋の取得に失敗しました。
+  /patient/details:
+    get:
+      tags:
+      - patient-controller
+      summary: トークンから患者情報を取得 (by Patient)
+      description: JWT に含まれる <code>username</code> をキーに患者情報を返します。
+      operationId: getPatientDetails
+      parameters:
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            '*/*':
+              schema:
+                type: string
+                example: "{\"patient\":{...}}"
+              examples:
+                成功レスポンス:
+                  description: 成功レスポンス
+                  value:
+                    patient:
+                      id: 12
+                      user:
+                        id: 12
+                        username: patientUser1
+                        fullName: 松本 綾香
+                        role: ROLE_PATIENT
+                      address: 東京都新宿区西新宿2-8-1
+                      dateOfBirth: 1990-01-15
+                      gender: male
+                      phone: 080-1234-0012
+                      createdAt: 2025-06-10T19:31:14
+        "404":
+          description: username に紐づく患者が存在しない
+          content:
+            '*/*':
+              example:
+                error: 該当する患者が見つかりません
+        "401":
+          description: トークンが無効 / 期限切れ
+          content:
+            '*/*':
+              example:
+                error: トークンが無効です。
+  /patient/appointments/{id}:
+    get:
+      tags:
+      - patient-controller
+      summary: 患者予約一覧を取得 (by Patient)
+      description: patientId に紐づくすべての予約を `AppointmentDTO` 配列で返却します。
+      operationId: getPatientAppointment
+      parameters:
+      - name: id
+        in: path
+        description: 患者 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 12
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppointmentDTO'
+              examples:
+                AppointmentsForPatient12:
+                  description: AppointmentsForPatient12
+                  value:
+                  - id: 1
+                    doctorId: 2
+                    patientId: 12
+                    appointmentTime: 2025-09-11T09:00:00
+                    status: 0
+                    payment: null
+                  - id: 11
+                    doctorId: 4
+                    patientId: 12
+                    appointmentTime: 2025-09-11T15:00:00
+                    status: 1
+                    payment: null
+                  - id: 21
+                    doctorId: 7
+                    patientId: 12
+                    appointmentTime: 2025-09-12T13:00:00
+                    status: 2
+                    payment: null
+                  - id: 31
+                    doctorId: 9
+                    patientId: 12
+                    appointmentTime: 2025-09-13T11:30:00
+                    status: 0
+                    payment: null
+        "401":
+          description: トークン検証失敗
+          content:
+            '*/*':
+              example:
+                error: トークンが無効です。
+        "500":
+          description: 内部エラー
+          content:
+            '*/*':
+              example:
+                error: 予約取得に失敗しました
+  /patient/appointments/filter/{condition}/{name}:
+    get:
+      tags:
+      - patient-controller
+      summary: 予約履歴をフィルタ (by Patient)
+      description: |
+        <p>患者自身の予約を <code>condition</code>（<code>past / future / cancel </code>）や
+        医師名（部分一致）で絞り込みます。<br>
+        いずれも <code>null</code> または空文字を渡すとその条件は無視されます。</p>
+        <ul>
+          <li><b>condition</b> … <code>past</code>= <code>status=1</code> / <code>future</code>=<code>status=0</code></li>
+          <li><b>name</b>      … 医師 User.fullName の部分一致</li>
+        </ul>
+      operationId: filterPatientAppointment
+      parameters:
+      - name: condition
+        in: path
+        description: '"past" / "future" / "cancel" / "null"'
+        required: true
+        schema:
+          type: string
+        example: future
+      - name: name
+        in: path
+        description: 医師名（部分一致）
+        required: true
+        schema:
+          type: string
+        example: 鈴木
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      responses:
+        "200":
+          description: フィルタ結果
+          content:
+            application/json:
+              schema:
+                type: object
+                example: |-
+                  {
+                    "data": [ /* see below */ ]
+                  }
+              examples:
+                FutureAppointmentsBySuzuki:
+                  summary: patientId=12 の future & "鈴木" でフィルタ
+                  description: status=0 (future) かつ 医師『鈴木 花子』の予約2件
+                  value:
+                    data:
+                    - id: 1
+                      doctorId: 2
+                      patientId: 12
+                      appointmentTime: 2025-09-11T09:00:00
+                      status: 0
+                      payment: null
+                    - id: 31
+                      doctorId: 9
+                      patientId: 12
+                      appointmentTime: 2025-09-13T11:30:00
+                      status: 0
+                      payment: null
+        "401":
+          description: トークン検証失敗
+          content:
+            '*/*':
+              example:
+                error: トークンが無効または期限切れです。
+        "404":
+          description: 患者レコードが見つからない
+          content:
+            '*/*':
+              example:
+                error: 患者情報が見つかりません。
+        "500":
+          description: 内部エラー
+          content:
+            '*/*':
+              example:
+                error: 内部エラーが発生しました。
+  /doctor/{doctorId}:
+    get:
+      tags:
+      - doctor-controller
+      summary: doctorIdに紐づく医師詳細を取得(by Patient)
+      description: doctorId を指定して単一の医師情報（ユーザー情報・クリニック情報・診療可能時間を含む）を返します。。
+      operationId: getDoctorById
+      parameters:
+      - name: doctorId
+        in: path
+        description: 医師 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 2
+      responses:
+        "404":
+          description: 該当 ID が存在しない
+          content:
+            application/json:
+              example:
+                error: 指定 ID の医師は存在しません。
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              example:
+                doctor:
+                - id: 2
+                  user:
+                    id: 2
+                    username: doctorUser1
+                    role: ROLE_DOCTOR
+                    fullName: 鈴木 花子
+                    admin: null
+                    doctor: 2
+                    patient: null
+                    createdAt: 2025-06-10T18:13:25
+                  clinicLocation:
+                    id: 1
+                    name: 中央クリニック
+                    address: 東京都中央区1-1-1
+                    phone: 03-1234-5678
+                  specialty: 心臓内科
+                  phone: 080-1111-0002
+                  availableTimes:
+                  - 2025-06-11 14:00
+                  - 2025-09-18 09:00
+                  - 2025-09-18 11:00
+                  - 2025-07-01 09:00
+                  - 2025-07-02 14:00
+                  - 2025-07-02 15:00
+                  createdAt: 2025-06-10T19:09:06
+    delete:
+      tags:
+      - doctor-controller
+      summary: 医師削除（by Admin）
+      description: Admin が指定 ID の医師（および関連する予約履歴など）を削除します。
+      operationId: deleteDoctor
+      parameters:
+      - name: doctorId
+        in: path
+        description: 削除対象の医師 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 11
+      - name: Authorization
+        in: header
+        description: Bearer トークン形式のJWT（例：Bearer eyJhbGciOi...）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.adminTokenSig
+      responses:
+        "200":
+          description: 削除成功
+          content:
+            application/json:
+              examples:
+                削除成功:
+                  description: 削除成功
+                  value:
+                    message: 医師(および紐づく予定履歴)を削除しました。
+        "404":
+          description: 該当IDの医師が存在しない
+          content:
+            application/json:
+              examples:
+                医師IDなし:
+                  description: 医師IDなし
+                  value:
+                    error: 指定 ID の医師は存在しません。
+        "401":
+          description: 認証失敗。JWTトークンが無効または期限切れです。
+          content:
+            application/json:
+              examples:
+                認証失敗:
+                  description: 認証失敗
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+  /doctor/filter/{name}/{specialty}/{period}:
+    get:
+      tags:
+      - doctor-controller
+      summary: 医師フィルタ( by Patient )
+      description: |
+        3 つのパラメータを組み合わせて医師を検索します。
+        <ul>
+          <li><code>name</code>      … 医師名（部分一致）例: <i>鈴木</i></li>
+          <li><code>specialty</code> … 専門分野           例: <i>心臓内科</i></li>
+          <li><code>period</code>    … 午前/午後           例: <i>AM</i> または <i>PM</i></li>
+        </ul>
+        各値が <code>null</code>（空文字）の場合、その条件は無視されます。
+      operationId: filterDoctors
+      parameters:
+      - name: name
+        in: path
+        description: 医師名（部分一致）
+        required: true
+        schema:
+          type: string
+        example: 鈴木
+      - name: specialty
+        in: path
+        description: 専門分野（完全一致）
+        required: true
+        schema:
+          type: string
+        example: 心臓内科
+      - name: period
+        in: path
+        description: "時間帯フィルタ: AM = 0:00-11:59, PM = 12:00-23:59"
+        required: true
+        schema:
+          type: string
+        example: AM
+      responses:
+        "200":
+          description: 条件にマッチした医師一覧
+          content:
+            application/json:
+              examples:
+                取得例:
+                  summary: AM・心臓内科・鈴木 で検索
+                  description: 取得例
+                  value:
+                    doctors:
+                    - id: 2
+                      user:
+                        username: doctorUser1
+                        fullName: 鈴木 花子
+                      phone: 080-1111-0002
+                      specialty: 心臓内科
+                      clinic:
+                        id: 1
+                        name: 中央クリニック
+                      availableTimes:
+                      - 09:00-10:00
+                      - 10:00-11:00
+                      - 11:00-12:00
+  /doctor/availability/{doctorId}/{date}:
+    get:
+      tags:
+      - doctor-controller
+      summary: 医師の空き時間を取得 (by Patient or Doctor)
+      description: 指定した <b>doctorId</b> と <b>date</b> について、未予約の時間帯リストを返します。
+      operationId: getDoctorAvailability
+      parameters:
+      - name: doctorId
+        in: path
+        description: 医師ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 2
+      - name: date
+        in: path
+        description: 対象日 (YYYY-MM-DD)
+        required: true
+        schema:
+          type: string
+          format: date
+        example: 2025-09-11
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              example:
+                availableTimes:
+                - 09:00-10:00
+                - 11:00-12:00
+                - 15:00-16:00
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              example:
+                error: 401
+                message: 認証に失敗しました。トークンが無効または期限切れです。
+  /doctor/availability/{date}:
+    get:
+      tags:
+      - doctor-controller
+      summary: 指定日の空き医師リスト（by Patient）
+      description: date（yyyy-MM-dd）を指定して、その日に少なくとも 1 つ空き時間が残っている医師一覧を返却します。
+      operationId: getDoctorsAvailableOn
+      parameters:
+      - name: date
+        in: path
+        description: 検索対象日 (yyyy-MM-dd)
+        required: true
+        schema:
+          type: string
+          format: date
+        example: 2025-09-11
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              example:
+                doctors:
+                - id: 2
+                  fullName: 鈴木 花子
+                  specialty: 心臓内科
+                  clinicLocation:
+                    id: 1
+                    name: 中央クリニック
+                  availableTimes:
+                  - 2025-09-11 11:00
+                  - 2025-09-11 15:00
+  /appointments/{doctorId}/{date}:
+    get:
+      tags:
+      - appointment-controller
+      summary: 指定日付の医師単位での予約一覧取得（by Doctor）
+      description: 指定した医師 ID と日付に基づいて、その日に予約されているすべての予約情報を返します。(キャンセル分は除く)
+      operationId: getAppointmentsByDate
+      parameters:
+      - name: doctorId
+        in: path
+        description: 医師の ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 2
+      - name: date
+        in: path
+        description: 予約日 (yyyy-MM-dd)
+        required: true
+        schema:
+          type: string
+          format: date
+        example: 2025-09-11
+      - name: Authorization
+        in: header
+        description: "Bearer トークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.tokenSignature
+      responses:
+        "200":
+          description: 該当日の予約リストを返却
+          content:
+            application/json:
+              examples:
+                予約一覧の例:
+                  description: 予約一覧の例
+                  value:
+                    appointments:
+                    - id: 1
+                      doctorId: 2
+                      patientId: 12
+                      patientName: 松本 綾香
+                      appointmentTime: 2025-09-11T09:00:00
+                      status: 0
+                      payment: null
+                    - id: 2
+                      doctorId: 2
+                      patientId: 13
+                      patientName: 佐藤 優子
+                      appointmentTime: 2025-09-11T10:00:00
+                      status: 0
+                      payment: null
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              examples:
+                トークンエラー例:
+                  description: トークンエラー例
+                  value:
+                    error: 401
+                    message: 認証に失敗しました。トークンが無効または期限切れです。
+  /appointments/{doctorId}/{date}/{patientName}:
+    get:
+      tags:
+      - appointment-controller
+      summary: 医師の予約一覧取得 (by Doctor)
+      description: 指定日と患者名（部分一致可）で、医師が持つ予約を取得します。リクエストヘッダーにJWTトークンが必要です。
+      operationId: getAppointments
+      parameters:
+      - name: doctorId
+        in: path
+        description: 医師 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 2
+      - name: date
+        in: path
+        description: 検索対象日 (yyyy-MM-dd)
+        required: true
+        schema:
+          type: string
+          format: date
+        example: 2025-09-11
+      - name: patientName
+        in: path
+        description: "患者名（部分一致）例: \"松本\"(null指定で全件指定)"
+        required: true
+        schema:
+          type: string
+        example: 松本
+      - name: Authorization
+        in: header
+        description: JWT トークン（Bearer プレフィックス付き）
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.doctorTokenSig
+      responses:
+        "200":
+          description: 検索成功
+          content:
+            application/json:
+              examples:
+                Success:
+                  summary: 検索結果例
+                  description: Success
+                  value:
+                    appointments:
+                    - id: 1
+                      doctor:
+                        id: 2
+                      patient:
+                        id: 12
+                      appointmentTime: 2025-09-11T09:00:00
+                      status: 0
+                    - id: 4
+                      doctor:
+                        id: 2
+                      patient:
+                        id: 15
+                      appointmentTime: 2025-09-11T14:00:00
+                      status: 1
+        "401":
+          description: 認証失敗。JWTトークンが無効または期限切れです。
+          content:
+            application/json:
+              example:
+                error: 401
+                message: 認証に失敗しました。トークンが無効または期限切れです。
+  /appointments/{id}:
+    delete:
+      tags:
+      - appointment-controller
+      summary: 予約キャンセル (by Patient)
+      description: 患者が自身の予約をキャンセルします。(appointmentテーブルの論理削除)
+      operationId: cancelAppointment
+      parameters:
+      - name: id
+        in: path
+        description: キャンセルする予約 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      - name: Authorization
+        in: header
+        description: "Bearerトークン（例: Bearer eyJhbGciOi...）"
+        required: true
+        schema:
+            type: string
+        example: Bearer eyJhbGciOiJIUzI1NiJ9.patientTokenSig
+      responses:
+        "200":
+          description: キャンセル成功
+          content:
+            application/json:
+              example:
+                message: 予約がキャンセルされました。
+        "404":
+          description: 予約が存在しない
+          content:
+            application/json:
+              example:
+                error: 予約が見つかりません。
+        "401":
+          description: 認証失敗。JWTトークンが無効、または期限切れです。
+          content:
+            application/json:
+              example:
+                error: 401
+                message: 認証に失敗しました。トークンが無効または期限切れです。
+components:
+  schemas:
+    Admin:
+      required:
+      - createdAt
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+    ClinicLocation:
+      required:
+      - address
+      - name
+      - phone
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          maxLength: 100
+          minLength: 0
+          type: string
+        address:
+          maxLength: 255
+          minLength: 0
+          type: string
+        phone:
+          pattern: "^\\d{3}-\\d{4}-\\d{4}$"
+          type: string
+    Doctor:
+      required:
+      - clinicLocation
+      - phone
+      - specialty
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/User'
+        clinicLocation:
+          $ref: '#/components/schemas/ClinicLocation'
+        specialty:
+          maxLength: 50
+          minLength: 2
+          type: string
+        phone:
+          pattern: "^0\\d{1,3}-\\d{3,4}-\\d{4}$"
+          type: string
+        availableTimes:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    Patient:
+      required:
+      - address
+      - dateOfBirth
+      - gender
+      - phone
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/User'
+        phone:
+          pattern: "^0\\d{1,3}-\\d{3,4}-\\d{4}$"
+          type: string
+        address:
+          maxLength: 255
+          minLength: 0
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum:
+          - male
+          - female
+          - other
+        createdAt:
+          type: string
+          format: date-time
+    User:
+      required:
+      - fullName
+      - passwordHash
+      - role
+      - username
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          maxLength: 50
+          minLength: 0
+          type: string
+        passwordHash:
+          maxLength: 255
+          minLength: 0
+          type: string
+          writeOnly: true
+        role:
+          type: string
+          enum:
+          - ROLE_ADMIN
+          - ROLE_DOCTOR
+          - ROLE_PATIENT
+        fullName:
+          maxLength: 100
+          minLength: 0
+          type: string
+        admin:
+          $ref: '#/components/schemas/Admin'
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+        patient:
+          $ref: '#/components/schemas/Patient'
+        createdAt:
+          type: string
+          format: date-time
+    Appointment:
+      required:
+      - appointmentTime
+      - doctor
+      - patient
+      - status
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        doctor:
+          $ref: '#/components/schemas/Doctor'
+        patient:
+          $ref: '#/components/schemas/Patient'
+        appointmentTime:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        payment:
+          $ref: '#/components/schemas/Payment'
+        endTime:
+          type: string
+          format: date-time
+        appointmentDate:
+          type: string
+          format: date
+        appointmentTimeOnly:
+          $ref: '#/components/schemas/LocalTime'
+    LocalTime:
+      type: object
+      properties:
+        hour:
+          type: integer
+          format: int32
+        minute:
+          type: integer
+          format: int32
+        second:
+          type: integer
+          format: int32
+        nano:
+          type: integer
+          format: int32
+    Payment:
+      required:
+      - appointment
+      - createdAt
+      - paymentMethod
+      - paymentStatus
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        appointment:
+          $ref: '#/components/schemas/Appointment'
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+          enum:
+          - cash
+          - credit
+          - insurance
+        paymentStatus:
+          type: string
+          enum:
+          - Paid
+          - Pending
+          - Failed
+        paidAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    PrescriptionForMongo:
+      required:
+      - appointmentId
+      - dosage
+      - medication
+      - patientId
+      type: object
+      properties:
+        id:
+          type: string
+        patientId:
+          type: string
+        appointmentId:
+          type: integer
+          format: int64
+        medication:
+          maxLength: 100
+          minLength: 3
+          type: string
+        dosage:
+          maxLength: 20
+          minLength: 3
+          type: string
+        doctorNotes:
+          maxLength: 200
+          minLength: 0
+          type: string
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+    AppointmentDTO:
+      required:
+      - appointmentTime
+      - doctorId
+      - patientId
+      - status
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        doctorId:
+          type: integer
+          format: int64
+        patientId:
+          type: integer
+          format: int64
+        patientName:
+          type: string
+        appointmentTime:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        payment:
+          $ref: '#/components/schemas/PaymentDTO'
+    PaymentDTO:
+      required:
+      - paymentMethod
+      - paymentStatus
+      type: object
+      properties:
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        paymentStatus:
+          type: string

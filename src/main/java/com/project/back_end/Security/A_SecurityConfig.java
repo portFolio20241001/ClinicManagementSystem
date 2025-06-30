@@ -52,6 +52,8 @@ public class A_SecurityConfig {
                 // === ログイン画面・静的リソース・APIログインは全員アクセス許可 ===
                 .requestMatchers("/", "/login/**", "/html/**","/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui/**","/api-docs.yaml").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // === DoctorController ===
