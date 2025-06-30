@@ -4,6 +4,12 @@ Smart Clinic の Spring Boot API（バックエンド）をコンポーネント
 3 レイヤ構造（Controller → Service → Repository）＋ Security フィルタ、  
 そして 2 種類のデータストア（MySQL / MongoDB）という構成になっています。
 
+クライアントのカウンターパートはSpringSecurityです。
+クライアントからheaderにAuthenticationが付与されていればJWT認証を実施し、認証OKならROLEを取得する。
+取得したROLE情報を元に後続のContorollerへ処理を渡すかどうか決定する。
+Authenticationが付与されていない、かつPOST　/loginならusername・passwordにてJWT認証を実施する。
+認証OKならばJWT発行してクライアントへ返す。
+
 ```mermaid
 flowchart TD
     %%──────────────────────────────────────
