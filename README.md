@@ -11,6 +11,18 @@
 - MySQL + MongoDB の Polyglot Persistence
 - コンテナ 1 コマンド (`docker compose up -d`) で起動
 
+## ⚡Technology Stack
+| Layer | Tech |
+|-------|------|
+| Language | **Java 17** |
+| Framework | **Spring Boot 3.2** |
+| Security | **Spring Security 6** + JWT | 
+| Database | **MySQL 8** | 
+| NoSQL | **MongoDB 6** | 
+| ORM | **Hibernate 6** (JPA) |
+| API Docs | **springdoc‑openapi** |
+| Build | **Maven** | 
+
 ## 🚀 Quick Start
 
 ```bash
@@ -100,4 +112,14 @@ flowchart TD
 
 ```
 ---
-## 🎅 システムフロー
+## 🎅 システムフロー図
+![GitHub上の画像](docs/10_architecture/システム鳥瞰図.png)
+
+
+---
+## ⏰データベース設計 (ER図 by DBeaver)
+
+![GitHub上の画像](docs/30_database/cms_db_ER.png)
+
+
+
