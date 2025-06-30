@@ -15,8 +15,8 @@
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-org/SmartClinic.git
-cd SmartClinic
+git clone https://github.com/portFolio20241001/ClinicManagementSystem.git
+cd ClinicManagementSystem
 
 # 2. Build & Run (API + MySQL + MongoDB)
 docker compose up -d --build
@@ -28,6 +28,7 @@ docker compose up -d --build
 # 4. 初期データ(デモ用)・・・起動時に自動でInsertされるように設定しております。
 #  - Adminユーザ（ユーザ名：adminUser1、PW：addpass1）
 #  - Doctorユーザ（ユーザ名：doctorUser1、PW：docpass1）
+#  - Patientユーザは登録画面から登録ください。
 
 ```
 ---
@@ -97,4 +98,6 @@ flowchart TD
     repoJpa -->|JDBC| mysql
     repoMongo -->|Driver| mongo
 
-
+```
+---
+## 🎅 システムフロー
