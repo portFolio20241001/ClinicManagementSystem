@@ -73,7 +73,8 @@ Rel(api, mongo, "Spring Data Mongo")
 
 ```
 ---
-## 🔥 バックエンド構成図(API仕様はSpringBootアプリ起動後、/swagger-ui/index.htmlを参照ください。)
+## 🔥 バックエンド構成図
+  (API仕様の詳細はSpringBootアプリ起動後、/swagger-ui/index.htmlを参照ください。)
 ```mermaid
 flowchart TD
     %%──────────────────────────────────────
