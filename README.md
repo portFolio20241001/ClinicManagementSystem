@@ -122,9 +122,13 @@ flowchart TD
 ![GitHub上の画像](docs/30_database/cms_db_ER.png)
 
 
-## 👴Adminダッシュボードの挙動イメージ
+## 👹Adminダッシュボードの挙動イメージ
 ![GitHub上の画像](docs/40_user_operation/AdminUser.gif)
 
+## 👴Doctorダッシュボードの挙動イメージ
+![GitHub上の画像](docs/40_user_operation/DoctorUser.gif)
 
+## 🥶Patientダッシュボードの挙動イメージ
+![GitHub上の画像](docs/40_user_operation/PatientUser.gif)
 
 
