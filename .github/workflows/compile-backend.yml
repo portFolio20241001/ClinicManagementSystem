@@ -23,4 +23,4 @@ jobs:
       # Maven を使って Java コードをコンパイル
       - name: Maven でコンパイル
         run: |
-          mvn clean compile            # pom.xml がリポジトリルートにあるため、cd 不要
+          ./mvnw clean compile            # pom.xml がリポジトリルートにあるため、cd 不要
