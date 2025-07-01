@@ -1,0 +1,26 @@
+name: Java バックエンドのコンパイル
+
+# プッシュまたはプルリクエスト時に実行される
+on: [push, pull_request]
+
+jobs:
+  compile-backend:
+    # GitHub が提供する最新の Ubuntu 環境で実行
+    runs-on: ubuntu-latest
+    name: バックエンドコードのコンパイル
+
+    steps:
+      # GitHub リポジトリのコードをチェックアウト
+      - uses: actions/checkout@v3
+
+      # Java 17 (Eclipse Temurin) をセットアップ
+      - name: JDK のセットアップ
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'      # Java ディストリビューション
+          java-version: '17'           # 使用する Java バージョン
+
+      # Maven を使って Java コードをコンパイル
+      - name: Maven でコンパイル
+        run: |
+          mvn clean compile            # pom.xml がリポジトリルートにあるため、cd 不要
