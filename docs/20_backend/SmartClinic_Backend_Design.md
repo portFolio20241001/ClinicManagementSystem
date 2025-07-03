@@ -30,15 +30,15 @@ The backend provides:
 ## Technology Stack
 | Layer | Tech | Notes |
 |-------|------|-------|
-| Language | **Java 17** | Modern LTS build |
-| Framework | **Spring Boot 3.2** | REST, DI, validation |
-| Security | **Spring Security 6** + JWT | Stateless, roles via `@PreAuthorize` |
-| Database | **MySQL 8** | Relational store (clinic core) |
-| NoSQL | **MongoDB 6** | High‑volume prescriptions |
-| ORM | **Hibernate 6** (JPA) | Lazy fetch tuned, batch fetch |
-| API Docs | **springdoc‑openapi** | Swagger UI auto‑generated |
-| Build | **Maven** | Multi‑module layout |
-| CI/CD | GitHub Actions → Flyway → AWS Elastic Beanstalk |
+| Language | **Java 17** | 
+| Framework | **Spring Boot 3.2** | 
+| Security | **Spring Security 6** + JWT | 
+| Database | **MySQL 8** | 
+| NoSQL | **MongoDB 6** | 
+| ORM | **Hibernate 6** (JPA) | 
+| API Docs | **springdoc‑openapi** | 
+| Build | **Maven** | 
+| CI/CD | GitHub Actions |
 
 ---
 
